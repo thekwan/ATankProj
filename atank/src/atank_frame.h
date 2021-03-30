@@ -3,6 +3,24 @@
 
 #include "ros/ros.h"
 #include "atank/Command.h"
+#include "atank_planner.h"
+
+enum class KeyState{
+    KEY_PUSHED,
+    KEY_RELEASED
+};
+
+enum KeyCode {
+    LEFT = 314,
+    RIGHT = 315,
+    UP = 316,
+    DOWN = 317,
+};
+
+typedef struct _KeyCodeInfo {
+    int code;
+    KeyState  state;
+} KeyCodeInfo;
 
 class KeyPadFrame;
 class ATankFrame : public wxFrame
@@ -17,6 +35,8 @@ public:
     void keypad_frame_closed(void) {
         m_keypad_frame = nullptr;
     }
+
+    void key_event_handler(KeyCodeInfo kinfo);
 
 private:
     /* 
@@ -45,6 +65,12 @@ private:
     wxTextCtrl *m_logText;          // log window
     KeyPadFrame *m_keypad_frame;    // key frame handler
 
+    /*
+     * Tank move planer.
+     */
+    void InitPlanner(void);
+    ATankPlanner *m_planner;
+
     void OnQuit(wxCommandEvent & WXUNUSED(event));
 };
 
@@ -69,10 +95,6 @@ private:
     ATankFrame *m_parent;
     wxTextCtrl *m_logText;
 
-    enum class KeyState{
-        KEY_PUSHED,
-        KEY_RELEASED
-    };
     std::map<int, KeyState> key_state;
-    std::vector<int> _valid_keycode;
+    std::vector<KeyCode> _valid_keycode;
 };

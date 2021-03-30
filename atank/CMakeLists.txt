@@ -220,6 +220,7 @@ target_link_libraries(command_server ${catkin_LIBRARIES})
 add_executable(command_client 
     src/command_client.cpp
     src/atank_frame.cpp
+    src/atank_planner.cpp
 )
 target_link_libraries(command_client 
     ${catkin_LIBRARIES}

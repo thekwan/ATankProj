@@ -102,6 +102,10 @@ ATankFrame::ATankFrame(const wxString & title)
      */
     RosInit();
 
+    /* Tank move planner.
+     */
+    InitPlanner();
+
     Show(true);
 }
 
@@ -121,6 +125,9 @@ void ATankFrame::OnQuit(wxCommandEvent & WXUNUSED(event))
     Close(true);
 }
 
+void ATankFrame::InitPlanner(void) {
+    m_planner = new ATankPlanner(m_logText);
+}
 
 void ATankFrame::RosInit(void)
 {
@@ -201,6 +208,26 @@ void ATankFrame::OnKeyControlPad(wxCommandEvent& WXUNUSED(event))
 {
     if (m_keypad_frame == nullptr) {
         m_keypad_frame = new KeyPadFrame("Control pannel", m_logText, this);
+    }
+}
+
+
+void ATankFrame::key_event_handler(KeyCodeInfo kinfo) {
+    wxString msg;
+
+    switch(kinfo.code) {
+        case LEFT:
+            break;
+        case RIGHT:
+            break;
+        case UP:
+            break;
+        case DOWN:
+            break;
+        default:
+            msg.Printf("[WARN] invalid keycode: %5d\n", kinfo.code);
+            m_logText->AppendText(msg);
+            break;
     }
 }
 
@@ -389,10 +416,10 @@ KeyPadFrame::KeyPadFrame(const wxString& title, wxTextCtrl *p_logText, ATankFram
     
 
     // Add valid keycodes.
-    _valid_keycode.push_back(314);  // left-arrow.
-    _valid_keycode.push_back(315);  // right-arrow.
-    _valid_keycode.push_back(316);  // up-arrow.
-    _valid_keycode.push_back(317);  // down-arrow.
+    _valid_keycode.push_back(KeyCode::LEFT);  // left-arrow.
+    _valid_keycode.push_back(KeyCode::RIGHT);  // right-arrow.
+    _valid_keycode.push_back(KeyCode::UP);  // up-arrow.
+    _valid_keycode.push_back(KeyCode::DOWN);  // down-arrow.
 
     Show(true);
 }
@@ -468,6 +495,7 @@ bool KeyPadFrame::isInvalidKeyCode(int keycode)
 
 void KeyPadFrame::OnKeyDown(wxKeyEvent& event) {
     int keycode = event.GetKeyCode();
+    KeyCodeInfo kinfo;
 
     // check the valid key event.
     if (isInvalidKeyCode(keycode))
@@ -477,11 +505,17 @@ void KeyPadFrame::OnKeyDown(wxKeyEvent& event) {
      || key_state[keycode] == KeyState::KEY_RELEASED) {
         LogEvent("KeyDown", event);
         key_state[keycode] = KeyState::KEY_PUSHED;
+
+        // keyboard event process.
+        kinfo.code = keycode;
+        kinfo.state = KeyState::KEY_PUSHED;
+        m_parent->key_event_handler(kinfo);
     }
 }
 
 void KeyPadFrame::OnKeyUp(wxKeyEvent& event) {
     int keycode = event.GetKeyCode();
+    KeyCodeInfo kinfo;
 
     // check the valid key event.
     if (isInvalidKeyCode(keycode))
@@ -491,6 +525,11 @@ void KeyPadFrame::OnKeyUp(wxKeyEvent& event) {
      || key_state[keycode] == KeyState::KEY_PUSHED) {
         LogEvent("KeyUp", event);
         key_state[keycode] = KeyState::KEY_RELEASED;
+
+        // keyboard event process.
+        kinfo.code = keycode;
+        kinfo.state = KeyState::KEY_RELEASED;
+        m_parent->key_event_handler(kinfo);
     }
 }
 
