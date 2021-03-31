@@ -55,6 +55,9 @@ private:
     void OnClear(wxCommandEvent& WXUNUSED(event)) { m_logText->Clear(); }
     void OnKeyControlPad(wxCommandEvent& WXUNUSED(event));
 
+    void OnUartOpen(wxCommandEvent & WXUNUSED(event));
+    void OnUartClose(wxCommandEvent & WXUNUSED(event));
+
     /*
      * GUI member variables and functions
      */

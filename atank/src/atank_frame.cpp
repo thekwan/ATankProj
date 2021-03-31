@@ -21,20 +21,26 @@ ATankFrame::ATankFrame(const wxString & title)
      * Menubar and Menu.
      */
     menuFile = new wxMenu;
-    menuFile->Append(wxID_ROS_OPEN,  "ROS &Open",
+    menuFile->Append(wxID_ROS_OPEN,  "ROS &Open\tO",
             "Initializes ROS client program.");
-    menuFile->Append(wxID_ROS_CLOSE, "ROS &Close",
+    menuFile->Append(wxID_ROS_CLOSE, "ROS &Close\tC",
             "Deinitializes ROS client program.");
-    menuFile->Append(wxID_ROS_TEST,  "ROS &Test",
+    menuFile->Append(wxID_ROS_TEST,  "ROS &Test\tT",
             "Test ROS connection.");
     menuFile->AppendSeparator();
 
-    menuFile->Append(wxID_CLEAR_LOG, "Clear &Log",
+    menuFile->Append(wxID_CLEAR_LOG, "Clear &Log\tL",
             "Clear log window.");
     menuFile->AppendSeparator();
 
     menuFile->Append(wxID_KEYCTRL_PAD, "&Key Pad\tK", 
             "Pop-up key pad pannel to control tank.");
+    menuFile->AppendSeparator();
+
+    menuFile->Append(wxID_UART_OPEN, "&UART open\tU", 
+            "UART connection open to control tank.");
+    menuFile->Append(wxID_UART_CLOSE, "U&ART close\tA", 
+            "UART connection close.");
     menuFile->AppendSeparator();
 
     menuFile->Append(wxID_EXIT, wxT("&Quit\tCtrl+Q"));
@@ -90,6 +96,10 @@ ATankFrame::ATankFrame(const wxString & title)
     Connect(wxID_KEYCTRL_PAD, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnKeyControlPad));
 
+    Connect(wxID_UART_OPEN, wxEVT_COMMAND_MENU_SELECTED,
+            wxCommandEventHandler(ATankFrame::OnUartOpen));
+    Connect(wxID_UART_CLOSE, wxEVT_COMMAND_MENU_SELECTED,
+            wxCommandEventHandler(ATankFrame::OnUartClose));
 
     Connect(wxID_EXIT, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnQuit));
@@ -193,6 +203,16 @@ void ATankFrame::OnRosTest(wxCommandEvent & WXUNUSED(event))
     }
 }
 
+// UART handlers
+void ATankFrame::OnUartOpen(wxCommandEvent & WXUNUSED(event))
+{
+    m_logText->AppendText(wxString("[INFO] OnUartOpen() is called.\n"));
+}
+
+void ATankFrame::OnUartClose(wxCommandEvent & WXUNUSED(event))
+{
+    m_logText->AppendText(wxString("[INFO] OnUartClose() is called.\n"));
+}
 
 // event handlers
 void ATankFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
