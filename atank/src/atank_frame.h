@@ -1,3 +1,6 @@
+#ifndef __ATANK_FRAME_H__
+#define __ATANK_FRAME_H__
+
 #include <wx/wx.h>
 #include <wx/timer.h>
 
@@ -42,8 +45,6 @@ private:
     /* 
      * ROS member variables and functions.
      */
-    ros::NodeHandle *_nh;
-    ros::ServiceClient *_client;
     bool _ros_connected;
     void RosInit(void);
     void RosShutdown(void);
@@ -101,3 +102,5 @@ private:
     std::map<int, KeyState> key_state;
     std::vector<KeyCode> _valid_keycode;
 };
+
+#endif  // __ATANK_FRAME_H__

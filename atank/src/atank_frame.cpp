@@ -12,6 +12,8 @@ const int wxID_UART_CLOSE = 4;
 const int wxID_KEYCTRL_PAD = 6;
 const int wxID_CLEAR_LOG = 7;
 
+ros::NodeHandle *_nh = nullptr;
+ros::ServiceClient *_client = nullptr;
 
 ATankFrame::ATankFrame(const wxString & title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxDefaultSize),
@@ -129,9 +131,6 @@ ATankFrame::~ATankFrame()
 
 void ATankFrame::OnQuit(wxCommandEvent & WXUNUSED(event))
 {
-    if (m_keypad_frame) {
-        delete m_keypad_frame;
-    }
     Close(true);
 }
 
@@ -145,6 +144,8 @@ void ATankFrame::RosInit(void)
     const char *argv[1] = {"command_client"};
     ros::init(argc, (char **)argv, "command_client");
     _nh = new ros::NodeHandle;
+
+    _client = nullptr;
 }
 
 void ATankFrame::RosShutdown(void)
@@ -153,6 +154,7 @@ void ATankFrame::RosShutdown(void)
     delete _nh;
     if (_ros_connected == true) {
         delete _client;
+        _client = nullptr;
     }
 }
 
@@ -161,6 +163,7 @@ void ATankFrame::OnRosClose(wxCommandEvent & WXUNUSED(event))
     ROS_INFO("[CMD CLIENT] ROS connection is closed.");
     if (_ros_connected) {
         delete _client;
+        _client = nullptr;
     }
     _ros_connected = false;
 }
@@ -235,20 +238,31 @@ void ATankFrame::OnKeyControlPad(wxCommandEvent& WXUNUSED(event))
 void ATankFrame::key_event_handler(KeyCodeInfo kinfo) {
     wxString msg;
 
-    switch(kinfo.code) {
-        case LEFT:
-            break;
-        case RIGHT:
-            break;
-        case UP:
-            break;
-        case DOWN:
-            break;
-        default:
-            msg.Printf("[WARN] invalid keycode: %5d\n", kinfo.code);
-            m_logText->AppendText(msg);
-            break;
+    if (kinfo.state == KeyState::KEY_PUSHED) {
+        switch(kinfo.code) {
+            case LEFT:  m_planner->keyboard_left_push();  break;
+            case RIGHT: m_planner->keyboard_right_push(); break;
+            case UP:    m_planner->keyboard_up_push();    break;
+            case DOWN:  m_planner->keyboard_down_push();  break;
+            default:
+                msg.Printf("[WARN] invalid keycode: %5d\n", kinfo.code);
+                m_logText->AppendText(msg);
+                break;
+        }
     }
+    else {
+        switch(kinfo.code) {
+            case LEFT:  m_planner->keyboard_left_release();  break;
+            case RIGHT: m_planner->keyboard_right_release(); break;
+            case UP:    m_planner->keyboard_up_release();    break;
+            case DOWN:  m_planner->keyboard_down_release();  break;
+            default:
+                msg.Printf("[WARN] invalid keycode: %5d\n", kinfo.code);
+                m_logText->AppendText(msg);
+                break;
+        }
+    }
+    
 }
 
 // helper function that returns textual description of wx virtual keycode
