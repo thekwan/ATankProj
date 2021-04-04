@@ -213,7 +213,11 @@ add_definitions("-std=gnu++11 -g")
 message("Found wxWidgets version: ${wxWidgets_VERSION}")
 include(${wxWidgets_USE_FILE})
 
-add_executable(command_server src/command_server.cpp)
+add_executable(command_server 
+    src/command_server.cpp 
+    src/uart.cc
+)
+
 target_link_libraries(command_server ${catkin_LIBRARIES})
 #add_dependencies(command_server atank_gencpp)
 

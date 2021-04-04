@@ -222,9 +222,11 @@ void ATankFrame::OnUartOpen(wxCommandEvent & WXUNUSED(event))
     if (_client->call(command)) {
         if (command.response.ack == true) {
             ROS_INFO("[CMD client] Connection is tested and successful.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
         }
         else {
             ROS_INFO("[CMD client] Connection is failed.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
         }
     }
     else {
@@ -246,9 +248,11 @@ void ATankFrame::OnUartClose(wxCommandEvent & WXUNUSED(event))
     if (_client->call(command)) {
         if (command.response.ack == true) {
             ROS_INFO("[CMD client] Connection is tested and successful.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
         }
         else {
             ROS_INFO("[CMD client] Connection is failed.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
         }
     }
     else {

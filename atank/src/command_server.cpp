@@ -1,18 +1,28 @@
 #include "ros/ros.h"
 #include "atank/Command.h"
+#include "uart.h"
+
+/*
+ * UART configurations.
+ */
+#define UART0_DEVICE_FILE   "/dev/ttyUSB0"
+#define UART0_BAUD_RATE     115200
+
+bool uart0_enabled = false;
+UartDriverLite *uart0 = nullptr;
 
 struct command_list {
     std::string cmd;
     std::vector<std::string> args;
 };
 
-void motor_control(struct command_list & clist);
-void uart_control(struct command_list & clist);
-void led_control(struct command_list & clist);
+std::string motor_control(struct command_list & clist);
+std::string uart_control(struct command_list & clist);
+std::string led_control(struct command_list & clist);
 
 struct command_function{
     const char *command;
-    void (*func)(struct command_list & clist);
+    std::string (*func)(struct command_list & clist);
 };
 
 struct command_function command_function_list[] = {
@@ -41,6 +51,7 @@ void parse_command(std::string cmd, struct command_list *clist) {
 bool cmd_proc(atank::Command::Request & req,
               atank::Command::Response & res)
 {
+    std::string log;
     // parse command 
     struct command_list clist;
     parse_command(req.cmd, &clist);
@@ -49,7 +60,7 @@ bool cmd_proc(atank::Command::Request & req,
 
     while(cf->command != nullptr) {
         if (clist.cmd.compare(cf->command) == 0) {
-            cf->func(clist);
+            log += cf->func(clist);
             break;
         }
         cf++;
@@ -61,12 +72,13 @@ bool cmd_proc(atank::Command::Request & req,
     
 
     std::stringstream ss;
-    ss << "'" << req.cmd << "' command is received.";
+    //ss << "'" << req.cmd << "' command is received.\n";
+    ss << log;// << "\n";
     res.ack = true;
     res.log = ss.str();
 
-    ROS_INFO("[CMD SERVER] get command '%s'.", req.cmd.c_str());
-    ROS_INFO("[CMD SERVER] send ack '%d' and log '%s'.", res.ack, res.log.c_str());
+    //ROS_INFO("[CMD SERVER] get command '%s'.", req.cmd.c_str());
+    //ROS_INFO("[CMD SERVER] send ack '%d' and log '%s'.", res.ack, res.log.c_str());
 
     // memory de-allocation.
 
@@ -95,15 +107,52 @@ void check_command_list(struct command_list & clist) {
     }
 }
 
-void motor_control(struct command_list & clist) {
+std::string motor_control(struct command_list & clist) {
+    std::string log = "motor_control::";
     ROS_INFO("[CMD SERVER] 'motor_control' func is called.");
     check_command_list(clist);
+
+    log += "TODO (not implemented yet).";
+
+    return log;
 }
-void uart_control(struct command_list & clist) {
+
+std::string uart_control(struct command_list & clist) {
+    std::string log = "uart_control::";
     ROS_INFO("[CMD SERVER] 'uart_control' func is called.");
     check_command_list(clist);
+
+    if (clist.args.size() < 1) {
+        ROS_INFO("[CMD SERVER-UART] error: insufficient command argument.");
+        log += "invalid command argument";
+        return log;
+    }
+
+    // check the argument list
+    if (clist.args[0].compare("open") == 0) {
+        uart0 = new UartDriverLite(UART0_DEVICE_FILE, UART0_BAUD_RATE);
+        if (uart0->isOpened()) {
+            log += "UART is opened. ";
+        }
+        else {
+            log += "UART open is failed. ";
+        }
+    }
+    else if (clist.args[0].compare("close") == 0) {
+        delete uart0;
+        uart0 = nullptr;
+        log += "UART is closed. ";
+    }
+
+    return log;
 }
-void led_control(struct command_list & clist) {
+
+std::string led_control(struct command_list & clist) {
+    std::string log = "led_control::";
     ROS_INFO("[CMD SERVER] 'led_control' func is called.");
     check_command_list(clist);
+
+    log += "TODO (not implemented yet).";
+
+    return log;
 }
