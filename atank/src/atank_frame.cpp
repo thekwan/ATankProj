@@ -156,6 +156,7 @@ void ATankFrame::RosShutdown(void)
         delete _client;
         _client = nullptr;
     }
+    _ros_connected = false;
 }
 
 void ATankFrame::OnRosClose(wxCommandEvent & WXUNUSED(event))
@@ -209,12 +210,50 @@ void ATankFrame::OnRosTest(wxCommandEvent & WXUNUSED(event))
 // UART handlers
 void ATankFrame::OnUartOpen(wxCommandEvent & WXUNUSED(event))
 {
-    m_logText->AppendText(wxString("[INFO] OnUartOpen() is called.\n"));
+    //m_logText->AppendText(wxString("[INFO] OnUartOpen() is called.\n"));
+    atank::Command command;
+    command.request.cmd = std::string("uart.open");
+
+    if (! _ros_connected) {
+        ROS_INFO("[WARN] ROS is not connected net.");
+        return;
+    }
+
+    if (_client->call(command)) {
+        if (command.response.ack == true) {
+            ROS_INFO("[CMD client] Connection is tested and successful.");
+        }
+        else {
+            ROS_INFO("[CMD client] Connection is failed.");
+        }
+    }
+    else {
+        ROS_INFO("[CMD CLIENT] Failed to call service.");
+    }
 }
 
 void ATankFrame::OnUartClose(wxCommandEvent & WXUNUSED(event))
 {
-    m_logText->AppendText(wxString("[INFO] OnUartClose() is called.\n"));
+    //m_logText->AppendText(wxString("[INFO] OnUartClose() is called.\n"));
+    atank::Command command;
+    command.request.cmd = std::string("uart.close");
+
+    if (! _ros_connected) {
+        ROS_INFO("[WARN] ROS is not connected net.");
+        return;
+    }
+
+    if (_client->call(command)) {
+        if (command.response.ack == true) {
+            ROS_INFO("[CMD client] Connection is tested and successful.");
+        }
+        else {
+            ROS_INFO("[CMD client] Connection is failed.");
+        }
+    }
+    else {
+        ROS_INFO("[CMD CLIENT] Failed to call service.");
+    }
 }
 
 // event handlers
