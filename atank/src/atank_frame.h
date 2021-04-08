@@ -15,8 +15,8 @@ enum class KeyState{
 
 enum KeyCode {
     LEFT = 314,
-    RIGHT = 315,
-    UP = 316,
+    RIGHT = 316,
+    UP = 315,
     DOWN = 317,
 };
 

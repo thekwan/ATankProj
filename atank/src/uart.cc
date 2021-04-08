@@ -37,6 +37,7 @@ UartDriverLite::UartDriverLite(const char *device, int baud_rate)
     if (uart_fd <0) {
         //perror(device_file);
         //UartMessageDisplayCallback("[ERROR] Can't open the device file.\n");
+        std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;
         return;
     }
 
@@ -176,7 +177,7 @@ void UartDriverLite::SendMessageUart(std::string message) {
         return;
     }
     
-    write(uart_fd, message.c_str(), message.size());
+    write(uart_fd, message.c_str(), message.size()+1);
 }
 
 void UartDriverLite::ReceiveMessageUart(std::string &message) {

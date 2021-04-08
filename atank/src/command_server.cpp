@@ -112,7 +112,20 @@ std::string motor_control(struct command_list & clist) {
     ROS_INFO("[CMD SERVER] 'motor_control' func is called.");
     check_command_list(clist);
 
-    log += "TODO (not implemented yet).";
+    //log += "TODO (not implemented yet).";
+
+    if (clist.args[0].compare("both") == 0) {
+        if (clist.args[1].compare("fw") == 0) {
+            uart0->SendMessageUart(std::string("rf"));
+            uart0->SendMessageUart(std::string("lsu"));
+            uart0->SendMessageUart(std::string("rsu"));
+            log += "UART sent message 'rf'+'lsu'+'rsu'";
+        }
+        if (clist.args[1].compare("stop") == 0) {
+            uart0->SendMessageUart(std::string("st"));
+            log += "UART sent message 'st'";
+        }
+    }
 
     return log;
 }
