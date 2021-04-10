@@ -14,12 +14,14 @@
 
 class UartDriverLite {
 public:
-    UartDriverLite(const char *device, int baud_rate);
-    UartDriverLite(const char *device);
+    UartDriverLite();
     ~UartDriverLite();
 
     //int  OpenChannelUart(void);
     //void CloseChannelUart(void);
+    void Open(const char *device, int baud_rate);
+    void Open(const char *device);
+    void Close();
     void SendMessageUart(std::string message);
     void ReceiveMessageUart(std::string &message);
     void SendByte(const char *data);

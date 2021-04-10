@@ -16,9 +16,27 @@
 #include "uart.h"
 
 //#define _DEBUG_ENABLE_
+#define CANONICAL_MODE
 
-UartDriverLite::UartDriverLite(const char *device)
-   : _device(device), _baud_rate(-1), _open_success(false) {
+UartDriverLite::UartDriverLite() : _open_success(false) { }
+
+UartDriverLite::~UartDriverLite(void) {
+    Close();
+}
+
+void UartDriverLite::Close() {
+    if (_baud_rate > 0) {
+        /* restore the old port settings */
+        tcsetattr(uart_fd,TCSANOW,&oldtio);
+    }
+    close(uart_fd);
+}
+
+void UartDriverLite::Open(const char *device) {
+    _device = device;
+    _baud_rate = -1;    // this is a file-mode. (not device mode);
+
+    // Open file.
     uart_fd = open(_device, O_RDWR | O_NOCTTY );
     if (uart_fd <0) {
         return;
@@ -27,12 +45,14 @@ UartDriverLite::UartDriverLite(const char *device)
     _open_success = true;
 }
 
-UartDriverLite::UartDriverLite(const char *device, int baud_rate)
-   : _device(device), _baud_rate(baud_rate), _open_success(false)
-{
+void UartDriverLite::Open(const char *device, int baud_rate) {
     //int fd,c, res;
     char buf[255];
 
+    _device = device;
+    _baud_rate = baud_rate;
+
+    //uart_fd = open(_device, O_RDWR | O_NOCTTY | NONBLOCK );
     uart_fd = open(_device, O_RDWR | O_NOCTTY );
     if (uart_fd <0) {
         //perror(device_file);
@@ -163,14 +183,6 @@ UartDriverLite::UartDriverLite(const char *device, int baud_rate)
     return;
 }
 
-UartDriverLite::~UartDriverLite(void) {
-    if (_baud_rate > 0) {
-        /* restore the old port settings */
-        tcsetattr(uart_fd,TCSANOW,&oldtio);
-    }
-    close(uart_fd);
-}
-
 void UartDriverLite::SendMessageUart(std::string message) {
     if (!_open_success) {
         std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;
@@ -189,6 +201,7 @@ void UartDriverLite::ReceiveMessageUart(std::string &message) {
     }
     
     int res = read(uart_fd, buf, 1024);
+    buf[res] = 0;
 
     message = std::string(buf);
 }

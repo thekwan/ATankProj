@@ -50,11 +50,10 @@ find_package(wxWidgets REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  Uart.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -107,7 +106,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES atank
-  CATKIN_DEPENDS roscpp std_msgs message_generation
+  CATKIN_DEPENDS roscpp std_msgs message_generation message_runtime
 #  DEPENDS system_lib
 )
 

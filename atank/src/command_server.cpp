@@ -1,6 +1,10 @@
 #include "ros/ros.h"
+#include "std_msgs/String.h"
 #include "atank/Command.h"
 #include "uart.h"
+
+#include <thread>
+#include <signal.h>
 
 /*
  * UART configurations.
@@ -9,7 +13,7 @@
 #define UART0_BAUD_RATE     115200
 
 bool uart0_enabled = false;
-UartDriverLite *uart0 = nullptr;
+UartDriverLite uart0;
 
 struct command_list {
     std::string cmd;
@@ -19,6 +23,9 @@ struct command_list {
 std::string motor_control(struct command_list & clist);
 std::string uart_control(struct command_list & clist);
 std::string led_control(struct command_list & clist);
+
+bool cmd_proc(atank::Command::Request & req,
+              atank::Command::Response & res);
 
 struct command_function{
     const char *command;
@@ -32,6 +39,53 @@ struct command_function command_function_list[] = {
 
     {   nullptr, nullptr         }  // end marker
 };
+
+void MessagePublisherThreadWrapper(ros::Publisher *msg_pub) {
+    std_msgs::String msg;
+    ros::Rate loop_rate(100);
+
+    // message publisher loop
+    while(ros::ok()) {
+        std::string _msg;
+
+        // check uart is opend.
+        if (uart0.isOpened()) {
+            uart0.ReceiveMessageUart(_msg);
+            msg.data = _msg.c_str();
+            msg_pub->publish(msg);
+        }
+
+        //ros::spinOnce();
+        //loop_rate.sleep();
+    }
+}
+
+void mySignalHandler(int sig) {
+    ros::shutdown();
+}
+
+int main(int argc, char *argv[])
+{
+    ros::init(argc, argv, "command_server");
+    ros::NodeHandle n;
+
+    signal(SIGINT, mySignalHandler);
+
+    // "command": topic name
+    ros::ServiceServer svr_server = n.advertiseService("command", cmd_proc);
+    ROS_INFO("[CMD SERVER] command server is ready to process.");
+
+    ros::Publisher     msg_pub = n.advertise<std_msgs::String> ("uart_msg", 1000);
+    std::thread _msg_t0(MessagePublisherThreadWrapper, &msg_pub);
+    ROS_INFO("[CMD SERVER] message server is ready to process.");
+
+    ros::spin();
+
+    _msg_t0.join();
+
+    return 0;
+}
+
 
 void parse_command(std::string cmd, struct command_list *clist) {
     std::string token;
@@ -86,19 +140,6 @@ bool cmd_proc(atank::Command::Request & req,
     return true;
 }
 
-int main(int argc, char *argv[])
-{
-    ros::init(argc, argv, "command_server");
-    ros::NodeHandle n;
-
-    // "command": topic name
-    ros::ServiceServer server = n.advertiseService("command", cmd_proc);
-    ROS_INFO("[CMD SERVER] command server is ready to process.");
-    ros::spin();
-
-    return 0;
-}
-
 void check_command_list(struct command_list & clist) {
     // DEBUG: print received command string and arguments
     ROS_INFO("[CMD SERVER] get command: '%s'.", clist.cmd.c_str());
@@ -116,13 +157,13 @@ std::string motor_control(struct command_list & clist) {
 
     if (clist.args[0].compare("both") == 0) {
         if (clist.args[1].compare("fw") == 0) {
-            uart0->SendMessageUart(std::string("rf"));
-            uart0->SendMessageUart(std::string("lsu"));
-            uart0->SendMessageUart(std::string("rsu"));
+            uart0.SendMessageUart(std::string("rf"));
+            uart0.SendMessageUart(std::string("lsu"));
+            uart0.SendMessageUart(std::string("rsu"));
             log += "UART sent message 'rf'+'lsu'+'rsu'";
         }
         if (clist.args[1].compare("stop") == 0) {
-            uart0->SendMessageUart(std::string("st"));
+            uart0.SendMessageUart(std::string("st"));
             log += "UART sent message 'st'";
         }
     }
@@ -143,8 +184,8 @@ std::string uart_control(struct command_list & clist) {
 
     // check the argument list
     if (clist.args[0].compare("open") == 0) {
-        uart0 = new UartDriverLite(UART0_DEVICE_FILE, UART0_BAUD_RATE);
-        if (uart0->isOpened()) {
+        uart0.Open(UART0_DEVICE_FILE, UART0_BAUD_RATE);
+        if (uart0.isOpened()) {
             log += "UART is opened. ";
         }
         else {
@@ -152,8 +193,7 @@ std::string uart_control(struct command_list & clist) {
         }
     }
     else if (clist.args[0].compare("close") == 0) {
-        delete uart0;
-        uart0 = nullptr;
+        uart0.Close();
         log += "UART is closed. ";
     }
 
