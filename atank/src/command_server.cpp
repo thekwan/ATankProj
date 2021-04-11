@@ -61,9 +61,8 @@ void MessagePublisherThreadWrapper(ros::Publisher *msg_pub) {
 }
 
 void mySignalHandler(int sig) {
-    ROS_INFO("mySignalHandler is called!!");
-    ros::shutdown();
-    uart0.SendMessageUart(std::string("shutdown"));
+    ROS_INFO("Signal handler is called. Server will be terminated.");
+    exit(1);
 }
 
 int main(int argc, char *argv[])
