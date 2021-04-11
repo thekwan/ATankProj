@@ -4,8 +4,12 @@
 #include <wx/wx.h>
 #include <wx/timer.h>
 
+#include <thread>
+
 #include "ros/ros.h"
+#include "std_msgs/String.h"
 #include "atank/Command.h"
+#include "atank/Uart.h"
 #include "atank_planner.h"
 
 enum class KeyState{
@@ -40,17 +44,21 @@ public:
     }
 
     void key_event_handler(KeyCodeInfo kinfo);
+    //void RosUartMsgCallback(const atank::UartConstPtr & uart);
+    void RosUartMsgCallback(const std_msgs::String::ConstPtr & uart);
 
 private:
     /* 
      * ROS member variables and functions.
      */
     bool _ros_connected;
+
     void RosInit(void);
     void RosShutdown(void);
     void OnRosOpen(wxCommandEvent & WXUNUSED(event));
     void OnRosClose(wxCommandEvent & WXUNUSED(event));
     void OnRosTest(wxCommandEvent & WXUNUSED(event));
+    //static void RosMsgThreadWrapper(ATankFrame *p);
 
     void OnAbout(wxCommandEvent& event);
     void OnClear(wxCommandEvent& WXUNUSED(event)) { m_logText->Clear(); }
@@ -68,6 +76,8 @@ private:
     
     wxTextCtrl *m_logText;          // log window
     KeyPadFrame *m_keypad_frame;    // key frame handler
+
+    std::thread *_msg_thread;
 
     /*
      * Tank move planer.

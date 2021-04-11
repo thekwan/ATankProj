@@ -23,9 +23,9 @@ public:
     void Open(const char *device);
     void Close();
     void SendMessageUart(std::string message);
-    void ReceiveMessageUart(std::string &message);
+    int  ReceiveMessageUart(std::string &message);
     void SendByte(const char *data);
-    void ReceiveByte(char *data);
+    int  ReceiveByte(char *data);
     bool isOpened(void);
 
 private:

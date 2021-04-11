@@ -42,7 +42,7 @@ struct command_function command_function_list[] = {
 
 void MessagePublisherThreadWrapper(ros::Publisher *msg_pub) {
     std_msgs::String msg;
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(10);
 
     // message publisher loop
     while(ros::ok()) {
@@ -61,7 +61,9 @@ void MessagePublisherThreadWrapper(ros::Publisher *msg_pub) {
 }
 
 void mySignalHandler(int sig) {
+    ROS_INFO("mySignalHandler is called!!");
     ros::shutdown();
+    uart0.SendMessageUart(std::string("shutdown"));
 }
 
 int main(int argc, char *argv[])
@@ -79,7 +81,9 @@ int main(int argc, char *argv[])
     std::thread _msg_t0(MessagePublisherThreadWrapper, &msg_pub);
     ROS_INFO("[CMD SERVER] message server is ready to process.");
 
-    ros::spin();
+    //ros::spin();
+    ros::MultiThreadedSpinner spinner(2);
+    spinner.spin();
 
     _msg_t0.join();
 

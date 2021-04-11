@@ -12,8 +12,12 @@ const int wxID_UART_CLOSE = 4;
 const int wxID_KEYCTRL_PAD = 6;
 const int wxID_CLEAR_LOG = 7;
 
+#define ROS_SERVICE_TOPIC_NAME  "command"
+#define ROS_MESSAGE_TOPIC_NAME  "uart_msg"
+
 ros::NodeHandle *_nh = nullptr;
 ros::ServiceClient *_client = nullptr;
+ros::Subscriber *_sub = nullptr;
 
 ATankFrame::ATankFrame(const wxString & title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxDefaultSize),
@@ -127,6 +131,7 @@ ATankFrame::~ATankFrame()
         delete m_keypad_frame;
     }
     RosShutdown();
+    _msg_thread->join();
 }
 
 void ATankFrame::OnQuit(wxCommandEvent & WXUNUSED(event))
@@ -169,14 +174,28 @@ void ATankFrame::OnRosClose(wxCommandEvent & WXUNUSED(event))
     _ros_connected = false;
 }
 
+static void RosMsgThreadWrapper(ATankFrame *p) {
+    // Connect message client
+    std::string topic_name(ROS_MESSAGE_TOPIC_NAME);
+    _sub = new ros::Subscriber;
+    *_sub = _nh->subscribe(ROS_MESSAGE_TOPIC_NAME, 1000, &ATankFrame::RosUartMsgCallback, p);
+
+    ros::spin();
+}
+
 void ATankFrame::OnRosOpen(wxCommandEvent & WXUNUSED(event))
 {
     if (_ros_connected == false) {
-        std::string topic_name = "command";
+        // Connect service client
+        std::string topic_name(ROS_SERVICE_TOPIC_NAME);
         _client = new ros::ServiceClient;
         *_client = _nh->serviceClient<atank::Command>(topic_name.c_str());
-
         ROS_INFO("[CMD client] Service instance is initialized.");
+
+        // Connect message client
+        _msg_thread = new std::thread(RosMsgThreadWrapper, this);
+        ROS_INFO("[CMD client] Message scriber is initialized.");
+
         m_logText->AppendText("Success to open ROS connection.\n");
         _ros_connected = true;
     }
@@ -205,6 +224,16 @@ void ATankFrame::OnRosTest(wxCommandEvent & WXUNUSED(event))
     else {
         ROS_INFO("[CMD CLIENT] there is no connection.");
     }
+}
+
+//void ATankFrame::RosUartMsgCallback(const atank::UartConstPtr & uart) {
+void ATankFrame::RosUartMsgCallback(const std_msgs::String::ConstPtr & msg) {
+    ROS_INFO("[MSG CLIENT] UART::%s", msg->data.c_str());
+
+    // multi-threading of m_logText is a problem (TODO: check this later)
+    //wxString str;
+    //str.Printf("[STM_UART_LOG] %s", msg->data.c_str());
+    //m_logText->AppendText(str);
 }
 
 // UART handlers

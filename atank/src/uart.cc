@@ -52,7 +52,7 @@ void UartDriverLite::Open(const char *device, int baud_rate) {
     _device = device;
     _baud_rate = baud_rate;
 
-    //uart_fd = open(_device, O_RDWR | O_NOCTTY | NONBLOCK );
+    //uart_fd = open(_device, O_RDWR | O_NOCTTY | O_NONBLOCK );
     uart_fd = open(_device, O_RDWR | O_NOCTTY );
     if (uart_fd <0) {
         //perror(device_file);
@@ -192,18 +192,22 @@ void UartDriverLite::SendMessageUart(std::string message) {
     write(uart_fd, message.c_str(), message.size()+1);
 }
 
-void UartDriverLite::ReceiveMessageUart(std::string &message) {
+int UartDriverLite::ReceiveMessageUart(std::string &message) {
     char buf[1024];
 
     if (!_open_success) {
-        std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;
-        return;
+        //std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;
+        return 0;
     }
     
     int res = read(uart_fd, buf, 1024);
-    buf[res] = 0;
 
-    message = std::string(buf);
+    if (res >= 0) {
+        buf[res] = 0;
+        message = std::string(buf);
+    }
+
+    return res;
 }
 
 void UartDriverLite::SendByte(const char *data) {
@@ -215,10 +219,10 @@ void UartDriverLite::SendByte(const char *data) {
     write(uart_fd, data, sizeof(char));
 }
 
-void UartDriverLite::ReceiveByte(char *data) {
+int  UartDriverLite::ReceiveByte(char *data) {
     if (!_open_success) {
-        std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;
-        return;
+        //std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;
+        return 0;
     }
 
     int res = read(uart_fd, data, sizeof(char));
@@ -229,6 +233,8 @@ void UartDriverLite::ReceiveByte(char *data) {
     std::cout << "RX Byte[0x" << std::hex << (*data & 0xFF) << "]\n";
     std::cout.copyfmt(state);
 #endif
+
+    return 0;
 }
 
 bool UartDriverLite::isOpened(void) {
