@@ -53,6 +53,7 @@ void MessagePublisherThreadWrapper(ros::Publisher *msg_pub) {
             uart0.ReceiveMessageUart(_msg);
             msg.data = _msg.c_str();
             msg_pub->publish(msg);
+            //ROS_INFO("Rx %s", _msg.c_str());
         }
 
         //ros::spinOnce();
@@ -62,6 +63,8 @@ void MessagePublisherThreadWrapper(ros::Publisher *msg_pub) {
 
 void mySignalHandler(int sig) {
     ROS_INFO("Signal handler is called. Server will be terminated.");
+    ros::shutdown();
+    uart0.Close();
     exit(1);
 }
 
@@ -80,9 +83,7 @@ int main(int argc, char *argv[])
     std::thread _msg_t0(MessagePublisherThreadWrapper, &msg_pub);
     ROS_INFO("[CMD SERVER] message server is ready to process.");
 
-    //ros::spin();
-    ros::MultiThreadedSpinner spinner(2);
-    spinner.spin();
+    ros::spin();
 
     _msg_t0.join();
 
@@ -165,10 +166,44 @@ std::string motor_control(struct command_list & clist) {
             uart0.SendMessageUart(std::string("rsu"));
             log += "UART sent message 'rf'+'lsu'+'rsu'";
         }
-        if (clist.args[1].compare("stop") == 0) {
+        else if (clist.args[1].compare("bw") == 0) {
+            uart0.SendMessageUart(std::string("rb"));
+            uart0.SendMessageUart(std::string("lsu"));
+            uart0.SendMessageUart(std::string("rsu"));
+            log += "UART sent message 'rb'+'lsu'+'rsu'";
+        }
+        else if (clist.args[1].compare("stop") == 0) {
             uart0.SendMessageUart(std::string("st"));
             log += "UART sent message 'st'";
         }
+        else {
+            log += "Unknown UART arg[1].";
+        }
+    }
+    else if (clist.args[0].compare("right") == 0) {
+        if (clist.args[1].compare("fw") == 0) {
+            uart0.SendMessageUart(std::string("lt"));
+            uart0.SendMessageUart(std::string("lsu"));
+            uart0.SendMessageUart(std::string("rsu"));
+            log += "UART sent message 'lt'+'lsu'+'rsu'";
+        }
+        else {
+            log += "Unknown UART arg[1].";
+        }
+    }
+    else if (clist.args[0].compare("left") == 0) {
+        if (clist.args[1].compare("fw") == 0) {
+            uart0.SendMessageUart(std::string("rt"));
+            uart0.SendMessageUart(std::string("lsu"));
+            uart0.SendMessageUart(std::string("rsu"));
+            log += "UART sent message 'rt'+'lsu'+'rsu'";
+        }
+        else {
+            log += "Unknown UART arg[1].";
+        }
+    }
+    else {
+        log += "Unknown UART arg[0].";
     }
 
     return log;
