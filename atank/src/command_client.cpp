@@ -15,6 +15,9 @@ public:
 };
 
 bool ATankApp::OnInit(void) {
+    // make sure to call this first.
+    wxInitAllImageHandlers();
+
     ATankFrame *atframe = new ATankFrame(wxT("ATankCtrl"));
     atframe->Show(true);
 

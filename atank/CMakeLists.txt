@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
 
 ## Find wxWidget LIBRARIES
 find_package(wxWidgets REQUIRED)
+find_package(OpenCV REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -228,6 +229,7 @@ add_executable(command_client
 target_link_libraries(command_client 
     ${catkin_LIBRARIES}
     ${wxWidgets_LIBRARIES}
+    ${OpenCV_LIBRARIES}
 )
 #add_dependencies(command_client atank_gencpp)
 

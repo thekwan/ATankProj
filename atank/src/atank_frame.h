@@ -5,6 +5,7 @@
 #include <wx/timer.h>
 
 #include <thread>
+#include <opencv2/opencv.hpp>
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -30,6 +31,9 @@ typedef struct _KeyCodeInfo {
 } KeyCodeInfo;
 
 class KeyPadFrame;
+class VideoFrame;
+class VideoPanel;
+
 class ATankFrame : public wxFrame
 {
 public:
@@ -41,6 +45,9 @@ public:
      */
     void keypad_frame_closed(void) {
         m_keypad_frame = nullptr;
+    }
+    void video_frame_closed(void) {
+        m_video_frame = nullptr;
     }
 
     void key_event_handler(KeyCodeInfo kinfo);
@@ -67,6 +74,8 @@ private:
     void OnUartOpen(wxCommandEvent & WXUNUSED(event));
     void OnUartClose(wxCommandEvent & WXUNUSED(event));
 
+    void OnVideoDisplay(wxCommandEvent & WXUNUSED(event));
+
     /*
      * GUI member variables and functions
      */
@@ -76,6 +85,7 @@ private:
     
     wxTextCtrl *m_logText;          // log window
     KeyPadFrame *m_keypad_frame;    // key frame handler
+    VideoFrame  *m_video_frame;
 
     std::thread *_msg_thread;
 
@@ -112,5 +122,41 @@ private:
     std::map<int, KeyState> key_state;
     std::vector<KeyCode> _valid_keycode;
 };
+
+class VideoFrame : public wxFrame
+{
+public:
+    VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame *m_parent);
+    ~VideoFrame();
+
+    void OnCloseWindow(wxCloseEvent & event);
+
+private:
+    wxWindow   *m_inputWin;
+    ATankFrame *m_parent;
+    wxTextCtrl *m_logText;
+    VideoPanel *m_drawPanel;
+};
+
+class VideoPanel : public wxPanel
+{
+    wxBitmap image;
+    wxTimer  timer;
+    cv::VideoCapture capture;
+    cv::Mat frame;
+    //cv::Mat  capture;
+
+public:
+    VideoPanel(wxFrame *parent);
+    ~VideoPanel(void);
+
+    wxSize getImageSize(void);
+
+    void paintEvent(wxPaintEvent & evt);
+    void paintNow();
+    void OnTimer(wxTimerEvent & evt);
+    void render(wxDC & dc);
+};
+
 
 #endif  // __ATANK_FRAME_H__

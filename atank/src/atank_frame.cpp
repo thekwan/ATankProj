@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 
+#include <opencv2/opencv.hpp>
+
 const int wxID_ROS_OPEN = 1;
 const int wxID_ROS_CLOSE = 2;
 const int wxID_ROS_TEST = 5;
@@ -11,6 +13,7 @@ const int wxID_UART_OPEN = 3;
 const int wxID_UART_CLOSE = 4;
 const int wxID_KEYCTRL_PAD = 6;
 const int wxID_CLEAR_LOG = 7;
+const int wxID_VIDEO_OPEN = 8;
 
 #define ROS_SERVICE_TOPIC_NAME  "command"
 #define ROS_MESSAGE_TOPIC_NAME  "uart_msg"
@@ -21,7 +24,8 @@ ros::Subscriber *_sub = nullptr;
 
 ATankFrame::ATankFrame(const wxString & title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxDefaultSize),
-    _ros_connected(false)
+    _ros_connected(false), m_keypad_frame(nullptr), m_video_frame(nullptr),
+    _msg_thread(nullptr)
 {
     /*
      * Menubar and Menu.
@@ -35,19 +39,28 @@ ATankFrame::ATankFrame(const wxString & title)
             "Test ROS connection.");
     menuFile->AppendSeparator();
 
+
     menuFile->Append(wxID_CLEAR_LOG, "Clear &Log\tL",
             "Clear log window.");
     menuFile->AppendSeparator();
 
+
     menuFile->Append(wxID_KEYCTRL_PAD, "&Key Pad\tK", 
             "Pop-up key pad pannel to control tank.");
     menuFile->AppendSeparator();
+
 
     menuFile->Append(wxID_UART_OPEN, "&UART open\tU", 
             "UART connection open to control tank.");
     menuFile->Append(wxID_UART_CLOSE, "U&ART close\tA", 
             "UART connection close.");
     menuFile->AppendSeparator();
+
+
+    menuFile->Append(wxID_VIDEO_OPEN, "&Video open\tV",
+            "Camera Video display open");
+    menuFile->AppendSeparator();
+
 
     menuFile->Append(wxID_EXIT, wxT("&Quit\tCtrl+Q"));
 
@@ -107,6 +120,9 @@ ATankFrame::ATankFrame(const wxString & title)
     Connect(wxID_UART_CLOSE, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnUartClose));
 
+    Connect(wxID_VIDEO_OPEN, wxEVT_COMMAND_MENU_SELECTED,
+            wxCommandEventHandler(ATankFrame::OnVideoDisplay));
+
     Connect(wxID_EXIT, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnQuit));
 
@@ -130,8 +146,15 @@ ATankFrame::~ATankFrame()
     if (m_keypad_frame) {
         delete m_keypad_frame;
     }
+    //if (m_video_frame) {
+    //    delete m_video_frame;
+    //}
+
     RosShutdown();
-    _msg_thread->join();
+
+    if (_msg_thread) {
+        _msg_thread->join();
+    }
 }
 
 void ATankFrame::OnQuit(wxCommandEvent & WXUNUSED(event))
@@ -303,6 +326,13 @@ void ATankFrame::OnKeyControlPad(wxCommandEvent& WXUNUSED(event))
 {
     if (m_keypad_frame == nullptr) {
         m_keypad_frame = new KeyPadFrame("Control pannel", m_logText, this);
+    }
+}
+
+void ATankFrame::OnVideoDisplay(wxCommandEvent &WXUNUSED(event))
+{
+    if (m_video_frame == nullptr) {
+        m_video_frame = new VideoFrame("Video pannel", m_logText, this);
     }
 }
 
@@ -639,3 +669,112 @@ void KeyPadFrame::OnKeyUp(wxKeyEvent& event) {
     }
 }
 
+
+// Video frame constructor
+VideoFrame::VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame *parent)
+       : wxFrame(NULL, wxID_ANY, title), m_parent(parent)
+{
+    m_logText = p_logText;
+    m_logText->AppendText("Camera video display panel is opened.\n");
+
+    Connect(wxEVT_CLOSE_WINDOW,
+                        wxCloseEventHandler(VideoFrame::OnCloseWindow),
+                        NULL, this);
+
+    // create image rendering panel
+    m_drawPanel = new VideoPanel(this);
+
+    // layout
+    wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(m_drawPanel, wxSizerFlags(1).Expand());
+    //SetSizerAndFit(sizer);
+    SetSizer(sizer);
+
+    // set size and position on screen
+    //SetSize(300, 200);
+    SetSize(m_drawPanel->getImageSize());
+    //CentreOnScreen();
+
+    Show(true);
+
+}
+
+VideoFrame::~VideoFrame(void) 
+{
+}
+
+void VideoFrame::OnCloseWindow(wxCloseEvent & event)
+{
+    m_logText->AppendText("Camera video display panel is closed.\n");
+    m_parent->video_frame_closed();
+
+    event.Skip();
+}
+
+#define TIMER_ID 1000
+
+VideoPanel::VideoPanel(wxFrame *parent)
+    : wxPanel(parent), timer(this, TIMER_ID)
+{
+    capture = cv::VideoCapture("/home/deokhwan/Workspace/SLAM/ATAM/data/movie.avi");
+    capture >> frame;
+
+    if (frame.channels() == 3) {
+        cv::cvtColor(frame, frame, CV_BGR2RGB);
+    }
+
+    wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
+    image = wxBitmap(tmp);
+
+    timer.Start(1000/30);   // 30 fps
+
+    Connect(wxEVT_PAINT,
+            wxPaintEventHandler(VideoPanel::paintEvent),
+            NULL, this);
+
+    Connect(timer.GetId(), wxEVT_TIMER,
+            wxTimerEventHandler(VideoPanel::OnTimer),
+            NULL, this);
+}
+
+VideoPanel::~VideoPanel(void)
+{
+}
+
+void VideoPanel::paintEvent(wxPaintEvent & event)
+{
+    wxPaintDC dc(this);
+    render(dc);
+}
+
+void VideoPanel::OnTimer(wxTimerEvent & event)
+{
+    capture >> frame;
+
+    if (frame.channels() == 3) {
+        cv::cvtColor(frame, frame, CV_BGR2RGB);
+    }
+
+    wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
+    image = wxBitmap(tmp);
+
+    paintNow();
+}
+
+void VideoPanel::paintNow(void)
+{
+    wxClientDC dc(this);
+    render(dc);
+}
+
+void VideoPanel::render(wxDC & dc)
+{
+    //m_logText->AppendText("render func is called.\n");
+    dc.DrawBitmap(image, 0, 0, false);
+}
+
+wxSize VideoPanel::getImageSize(void)
+{
+    return wxSize(frame.cols, frame.rows);
+
+}
