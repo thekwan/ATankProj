@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
 
 const int wxID_ROS_OPEN = 1;
 const int wxID_ROS_CLOSE = 2;
@@ -26,7 +26,7 @@ ros::Subscriber *_sub = nullptr;
 
 ATankFrame::ATankFrame(const wxString & title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxDefaultSize),
-    _ros_connected(false), m_keypad_frame(nullptr), m_video_frame(nullptr),
+    _ros_connected(false), m_keypad_frame(nullptr), /*m_video_frame(nullptr),*/
     _msg_thread(nullptr)
 {
     /*
@@ -156,9 +156,9 @@ ATankFrame::~ATankFrame()
     if (m_keypad_frame) {
         delete m_keypad_frame;
     }
-    if (m_video_frame) {
-        delete m_video_frame;
-    }
+    //if (m_video_frame) {
+    //    delete m_video_frame;
+    //}
 
     RosShutdown();
 
@@ -404,9 +404,9 @@ void ATankFrame::OnKeyControlPad(wxCommandEvent& WXUNUSED(event))
 
 void ATankFrame::OnVideoDisplay(wxCommandEvent &WXUNUSED(event))
 {
-    if (m_video_frame == nullptr) {
-        m_video_frame = new VideoFrame("Video pannel", m_logText, this);
-    }
+    //if (m_video_frame == nullptr) {
+    //    m_video_frame = new VideoFrame("Video pannel", m_logText, this);
+    //}
 }
 
 
@@ -742,7 +742,7 @@ void KeyPadFrame::OnKeyUp(wxKeyEvent& event) {
     }
 }
 
-
+#if 0
 // Video frame constructor
 VideoFrame::VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame *parent)
        : wxFrame(NULL, wxID_ANY, title), m_parent(parent), m_drawPanel(nullptr)
@@ -892,3 +892,4 @@ wxSize VideoPanel::getImageSize(void)
     return wxSize(frame.cols, frame.rows);
 
 }
+#endif
