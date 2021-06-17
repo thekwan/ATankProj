@@ -11,6 +11,7 @@
 #include "std_msgs/String.h"
 #include "atank/Command.h"
 #include "atank/Uart.h"
+#include "atank/Spi.h"
 #include "atank_planner.h"
 
 enum class KeyState{
@@ -51,8 +52,8 @@ public:
     }
 
     void key_event_handler(KeyCodeInfo kinfo);
-    //void RosUartMsgCallback(const atank::UartConstPtr & uart);
     void RosUartMsgCallback(const std_msgs::String::ConstPtr & uart);
+    void RosSpiMsgCallback(const atank::Spi::ConstPtr & spi);
 
 private:
     /* 
@@ -73,6 +74,8 @@ private:
 
     void OnUartOpen(wxCommandEvent & WXUNUSED(event));
     void OnUartClose(wxCommandEvent & WXUNUSED(event));
+    void OnSpiOpen(wxCommandEvent & WXUNUSED(event));
+    void OnSpiClose(wxCommandEvent & WXUNUSED(event));
 
     void OnVideoDisplay(wxCommandEvent & WXUNUSED(event));
 
@@ -146,6 +149,9 @@ class VideoPanel : public wxPanel
     cv::Mat frame;
     //cv::Mat  capture;
 
+    std::thread *draw_thread_;
+    bool draw_enable_;
+
 public:
     VideoPanel(wxFrame *parent);
     ~VideoPanel(void);
@@ -155,7 +161,9 @@ public:
     void paintEvent(wxPaintEvent & evt);
     void paintNow();
     void OnTimer(wxTimerEvent & evt);
+    void UpdateWindow(void);
     void render(wxDC & dc);
+    bool isUpdateOk(void);
 };
 
 

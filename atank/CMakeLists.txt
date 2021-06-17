@@ -54,6 +54,7 @@ find_package(OpenCV REQUIRED)
 add_message_files(
   FILES
   Uart.msg
+  Spi.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -216,6 +217,7 @@ include(${wxWidgets_USE_FILE})
 add_executable(command_server 
     src/command_server.cpp 
     src/uart.cc
+    src/spi.cc
 )
 
 target_link_libraries(command_server ${catkin_LIBRARIES})

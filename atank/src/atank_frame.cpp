@@ -14,6 +14,8 @@ const int wxID_UART_CLOSE = 4;
 const int wxID_KEYCTRL_PAD = 6;
 const int wxID_CLEAR_LOG = 7;
 const int wxID_VIDEO_OPEN = 8;
+const int wxID_SPI_OPEN = 9;
+const int wxID_SPI_CLOSE = 10;
 
 #define ROS_SERVICE_TOPIC_NAME  "command"
 #define ROS_MESSAGE_TOPIC_NAME  "uart_msg"
@@ -53,6 +55,10 @@ ATankFrame::ATankFrame(const wxString & title)
     menuFile->Append(wxID_UART_OPEN, "&UART open\tU", 
             "UART connection open to control tank.");
     menuFile->Append(wxID_UART_CLOSE, "U&ART close\tA", 
+            "UART connection close.");
+    menuFile->Append(wxID_SPI_OPEN, "S&PI open\tU", 
+            "UART connection open to control tank.");
+    menuFile->Append(wxID_SPI_CLOSE, "SP&I close\tA", 
             "UART connection close.");
     menuFile->AppendSeparator();
 
@@ -119,6 +125,10 @@ ATankFrame::ATankFrame(const wxString & title)
             wxCommandEventHandler(ATankFrame::OnUartOpen));
     Connect(wxID_UART_CLOSE, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnUartClose));
+    Connect(wxID_SPI_OPEN, wxEVT_COMMAND_MENU_SELECTED,
+            wxCommandEventHandler(ATankFrame::OnSpiOpen));
+    Connect(wxID_SPI_CLOSE, wxEVT_COMMAND_MENU_SELECTED,
+            wxCommandEventHandler(ATankFrame::OnSpiClose));
 
     Connect(wxID_VIDEO_OPEN, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnVideoDisplay));
@@ -146,9 +156,9 @@ ATankFrame::~ATankFrame()
     if (m_keypad_frame) {
         delete m_keypad_frame;
     }
-    //if (m_video_frame) {
-    //    delete m_video_frame;
-    //}
+    if (m_video_frame) {
+        delete m_video_frame;
+    }
 
     RosShutdown();
 
@@ -311,6 +321,69 @@ void ATankFrame::OnUartClose(wxCommandEvent & WXUNUSED(event))
         ROS_INFO("[CMD CLIENT] Failed to call service.");
     }
 }
+
+// SPI handlers
+void ATankFrame::RosSpiMsgCallback(const atank::Spi::ConstPtr & msg) {
+    ROS_INFO("[MSG CLIENT] SPI::%d", msg->data_size);
+
+    // multi-threading of m_logText is a problem (TODO: check this later)
+    //wxString str;
+    //str.Printf("[STM_UART_LOG] %s", msg->data.c_str());
+    //m_logText->AppendText(str);
+}
+
+void ATankFrame::OnSpiOpen(wxCommandEvent & WXUNUSED(event))
+{
+    //m_logText->AppendText(wxString("[INFO] OnSpiOpen() is called.\n"));
+    atank::Command command;
+    command.request.cmd = std::string("spi.open");
+
+    if (! _ros_connected) {
+        ROS_INFO("[WARN] ROS is not connected net.");
+        return;
+    }
+
+    if (_client->call(command)) {
+        if (command.response.ack == true) {
+            ROS_INFO("[CMD client] Connection is tested and successful.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
+        }
+        else {
+            ROS_INFO("[CMD client] Connection is failed.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
+        }
+    }
+    else {
+        ROS_INFO("[CMD CLIENT] Failed to call service.");
+    }
+}
+
+void ATankFrame::OnSpiClose(wxCommandEvent & WXUNUSED(event))
+{
+    //m_logText->AppendText(wxString("[INFO] OnSpiClose() is called.\n"));
+    atank::Command command;
+    command.request.cmd = std::string("spi.close");
+
+    if (! _ros_connected) {
+        ROS_INFO("[WARN] ROS is not connected net.");
+        return;
+    }
+
+    if (_client->call(command)) {
+        if (command.response.ack == true) {
+            ROS_INFO("[CMD client] Connection is tested and successful.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
+        }
+        else {
+            ROS_INFO("[CMD client] Connection is failed.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
+        }
+    }
+    else {
+        ROS_INFO("[CMD CLIENT] Failed to call service.");
+    }
+}
+
 
 // event handlers
 void ATankFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
@@ -672,7 +745,7 @@ void KeyPadFrame::OnKeyUp(wxKeyEvent& event) {
 
 // Video frame constructor
 VideoFrame::VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame *parent)
-       : wxFrame(NULL, wxID_ANY, title), m_parent(parent)
+       : wxFrame(NULL, wxID_ANY, title), m_parent(parent), m_drawPanel(nullptr)
 {
     m_logText = p_logText;
     m_logText->AppendText("Camera video display panel is opened.\n");
@@ -701,6 +774,9 @@ VideoFrame::VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame 
 
 VideoFrame::~VideoFrame(void) 
 {
+    if (m_drawPanel) {
+        delete m_drawPanel;
+    }
 }
 
 void VideoFrame::OnCloseWindow(wxCloseEvent & event)
@@ -713,10 +789,23 @@ void VideoFrame::OnCloseWindow(wxCloseEvent & event)
 
 #define TIMER_ID 1000
 
+static void VideoFrameDrawer(VideoPanel *p) {
+    while(p->isUpdateOk()) {
+        p->UpdateWindow();
+    }
+
+    return;
+}
+
 VideoPanel::VideoPanel(wxFrame *parent)
-    : wxPanel(parent), timer(this, TIMER_ID)
+    : wxPanel(parent), timer(this, TIMER_ID), draw_enable_(true), draw_thread_(nullptr)
 {
-    capture = cv::VideoCapture("/home/deokhwan/Workspace/SLAM/ATAM/data/movie.avi");
+    //capture = cv::VideoCapture("/home/deokhwan/Workspace/SLAM/ATAM/data/movie.avi");
+    capture = cv::VideoCapture("http://raspberrypi:8080/stream/video.mjpeg");
+
+    capture.set(CV_CAP_PROP_BUFFERSIZE, 1);
+
+
     capture >> frame;
 
     if (frame.channels() == 3) {
@@ -726,25 +815,50 @@ VideoPanel::VideoPanel(wxFrame *parent)
     wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
     image = wxBitmap(tmp);
 
-    timer.Start(1000/30);   // 30 fps
+    timer.Start(1000/10);   // 10 fps
 
-    Connect(wxEVT_PAINT,
-            wxPaintEventHandler(VideoPanel::paintEvent),
-            NULL, this);
+    //Connect(wxEVT_PAINT,
+    //        wxPaintEventHandler(VideoPanel::paintEvent),
+    //        NULL, this);
 
     Connect(timer.GetId(), wxEVT_TIMER,
             wxTimerEventHandler(VideoPanel::OnTimer),
             NULL, this);
+    
+    //draw_thread_ = new std::thread(VideoFrameDrawer, this);
 }
 
 VideoPanel::~VideoPanel(void)
 {
+    draw_enable_ = false;
+    if (draw_thread_) {
+        draw_thread_->join();
+    }
 }
 
 void VideoPanel::paintEvent(wxPaintEvent & event)
 {
     wxPaintDC dc(this);
     render(dc);
+}
+
+bool VideoPanel::isUpdateOk(void)
+{
+    return draw_enable_;
+}
+
+void VideoPanel::UpdateWindow(void)
+{
+    capture >> frame;
+
+    if (frame.channels() == 3) {
+        cv::cvtColor(frame, frame, CV_BGR2RGB);
+    }
+
+    wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
+    image = wxBitmap(tmp);
+
+    //paintNow();
 }
 
 void VideoPanel::OnTimer(wxTimerEvent & event)
