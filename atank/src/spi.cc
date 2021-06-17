@@ -112,16 +112,17 @@ void SpiDriverLite::Close() {
     _open_success = false;
 }
 
-void SpiDriverLite::SendBytes(const char *tx_data, int n) {
-    spi_write(tx_data, n);
+int SpiDriverLite::SendBytes(const char *tx_data, int n) {
+    return spi_write(tx_data, n);
 }
 
 int  SpiDriverLite::ReceiveBytes(char *rx_data, int n) {
-    spi_read(NULL, 0, rx_data, n);
+    char tx[1];
+    return spi_read(tx, 0, rx_data, n);
 }
 
-void SpiDriverLite::SendAndReceiveBytes(const char *tx_data, int tx_n, char *rx_data, int rx_n) {
-    spi_read(tx_data, tx_n, rx_data, rx_n);
+int SpiDriverLite::SendAndReceiveBytes(const char *tx_data, int tx_n, char *rx_data, int rx_n) {
+    return spi_read(tx_data, tx_n, rx_data, rx_n);
 }
 
 bool SpiDriverLite::isOpened(void) {

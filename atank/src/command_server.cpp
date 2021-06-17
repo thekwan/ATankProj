@@ -71,7 +71,7 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
 
 void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
     atank::Spi msg;
-    ros::Rate loop_rate(30);
+    ros::Rate loop_rate(10);
 
     char tx[1024], rx[1024];
 
@@ -81,13 +81,21 @@ void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
 
         // check uart is opend.
         if (spi0.isOpened()) {
-            spi0.SendAndReceiveBytes(tx, 1, rx, 2);
-            int data_size = (((int)rx[1]) << 8) + ((int)rx[0]);
-            spi0.ReceiveBytes(rx, data_size);
+            int rx_len;
+            int data_size;
+
+            tx[0] = 0xD;
+
+            rx_len = spi0.SendAndReceiveBytes(tx, 1, rx, 2);
+            ROS_INFO("SpiDataSize:    (rx_len: %d)", rx_len);
+
+            data_size = (((int)rx[1]) << 8) + ((int)rx[0]);
+            rx_len = spi0.SendAndReceiveBytes(tx, 0, rx, data_size);
 
             msg.data_size = (uint16_t) data_size;
             msg_pub->publish(msg);
-            ROS_INFO("SpiDataSize: %d", data_size);
+
+            ROS_INFO("SpiDataSize: %2d (rx_len: %d)", data_size, rx_len);
         }
 
         //ros::spinOnce();

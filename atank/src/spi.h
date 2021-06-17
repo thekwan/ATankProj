@@ -19,9 +19,9 @@ public:
 
     //void SendMessageSpi(std::string message);
     //int  ReceiveMessageSpi(std::string &message);
-    void SendBytes(const char *tx_data, int n);
+    int  SendBytes(const char *tx_data, int n);
     int  ReceiveBytes(char *rx_data, int n);
-    void SendAndReceiveBytes(const char *tx_data, int tx_n, char *rx_data, int rx_n);
+    int  SendAndReceiveBytes(const char *tx_data, int tx_n, char *rx_data, int rx_n);
     bool isOpened(void);
 
 private:
