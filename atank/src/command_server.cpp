@@ -69,11 +69,12 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
     }
 }
 
+char tx[2], rx[1024];
+
 void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
     atank::Spi msg;
     ros::Rate loop_rate(10);
 
-    char tx[1024], rx[1024];
 
     // message publisher loop
     while(ros::ok()) {
@@ -89,7 +90,12 @@ void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
             rx_len = spi0.SendAndReceiveBytes(tx, 1, rx, 2);
             ROS_INFO("SpiDataSize:    (rx_len: %d)", rx_len);
 
-            data_size = (((int)rx[1]) << 8) + ((int)rx[0]);
+            data_size = (((int)rx[1]) << 8) | ((int)rx[0]);
+
+            if (data_size > 1024) {
+                data_size = 1024;
+            }
+
             rx_len = spi0.SendAndReceiveBytes(tx, 0, rx, data_size);
 
             msg.data_size = (uint16_t) data_size;
