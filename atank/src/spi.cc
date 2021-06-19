@@ -1,5 +1,7 @@
 #include "spi.h"
 
+struct spi_ioc_transfer xfer[2];
+
 SpiDriverLite::SpiDriverLite() {
     _open_success = false;
     _spi_tool = NULL;
@@ -29,21 +31,21 @@ void SpiDriverLite::Open(const char *device, int speed_hz) {
 
     _spi_tool->hz = _speed_hz;
 
-    _spi_tool->xfer[0].tx_buf = 0;
-    _spi_tool->xfer[0].rx_buf = 0;
-    _spi_tool->xfer[0].len = 0; // Length of  command to write
-    _spi_tool->xfer[0].cs_change = 0;
-    _spi_tool->xfer[0].delay_usecs = 0,
-    _spi_tool->xfer[0].speed_hz = _speed_hz,
-    _spi_tool->xfer[0].bits_per_word = 8,
+    xfer[0].tx_buf = 0;
+    xfer[0].rx_buf = 0;
+    xfer[0].len = 0; // Length of  command to write
+    xfer[0].cs_change = 0;
+    xfer[0].delay_usecs = 0,
+    xfer[0].speed_hz = _speed_hz,
+    xfer[0].bits_per_word = 8,
 
-    _spi_tool->xfer[1].rx_buf = 0;
-    _spi_tool->xfer[1].tx_buf = 0;
-    _spi_tool->xfer[1].len = 0; // Length of Data to read
-    _spi_tool->xfer[1].cs_change = 0;
-    _spi_tool->xfer[1].delay_usecs = 0;
-    _spi_tool->xfer[1].speed_hz = _speed_hz;
-    _spi_tool->xfer[1].bits_per_word = 8;
+    xfer[1].rx_buf = 0;
+    xfer[1].tx_buf = 0;
+    xfer[1].len = 0; // Length of Data to read
+    xfer[1].cs_change = 0;
+    xfer[1].delay_usecs = 0;
+    xfer[1].speed_hz = _speed_hz;
+    xfer[1].bits_per_word = 8;
 
 
     if ((_spi_tool->fd = open(_device, O_RDWR)) < 0) {
@@ -135,13 +137,13 @@ int SpiDriverLite::spi_read(const char *tx, int tx_len, char *rx, int rx_len) {
         return 0;
     }
 
-    _spi_tool->xfer[0].tx_buf = (unsigned long)tx;
-    _spi_tool->xfer[0].len = tx_len;
+    xfer[0].tx_buf = (unsigned long)tx;
+    xfer[0].len = tx_len;
 
-    _spi_tool->xfer[1].rx_buf = (unsigned long)rx;
-    _spi_tool->xfer[1].len = rx_len;
+    xfer[1].rx_buf = (unsigned long)rx;
+    xfer[1].len = rx_len;
 
-    status = ioctl(_spi_tool->fd, SPI_IOC_MESSAGE(2), _spi_tool->xfer);
+    status = ioctl(_spi_tool->fd, SPI_IOC_MESSAGE(2), xfer);
 
     if (status < 0) {
         return 0;
@@ -156,13 +158,13 @@ int SpiDriverLite::spi_write(const char *tx, int tx_len) {
         return 0;
     }
 
-    _spi_tool->xfer[0].tx_buf = (unsigned long)tx;
-    _spi_tool->xfer[0].len = tx_len;
+    xfer[0].tx_buf = (unsigned long)tx;
+    xfer[0].len = tx_len;
 
-    _spi_tool->xfer[1].rx_buf = 0;
-    _spi_tool->xfer[1].len = 0;
+    xfer[1].rx_buf = 0;
+    xfer[1].len = 0;
 
-    status = ioctl(_spi_tool->fd, SPI_IOC_MESSAGE(1), &_spi_tool->xfer[0]);
+    status = ioctl(_spi_tool->fd, SPI_IOC_MESSAGE(1), &xfer[0]);
 
     if (status < 0) {
         return 0;

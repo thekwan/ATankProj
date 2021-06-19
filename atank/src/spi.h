@@ -30,7 +30,6 @@ private:
         uint8_t mode;
         uint8_t bits;
         uint32_t hz;
-        struct spi_ioc_transfer xfer[2];
     } spi_tool_t;
 
     void spi_deinit();
