@@ -324,7 +324,19 @@ void ATankFrame::OnUartClose(wxCommandEvent & WXUNUSED(event))
 
 // SPI handlers
 void ATankFrame::RosSpiMsgCallback(const atank::Spi::ConstPtr & msg) {
-    ROS_INFO("[MSG CLIENT] SPI::%d", msg->data_size);
+    int data_size = msg->data_size;
+    //ROS_INFO("[MSG CLIENT] SPI::%d", data_size);
+
+    char data[1024*3+1];
+    data[1024*3] = 0;
+
+    char *p_data = data;
+    for(int i = 0; i < data_size; i++) {
+        sprintf(p_data, "%02x ", msg->data[i]);
+        p_data+= 3;
+    }
+
+    ROS_INFO("[MSG CLIENT] SPI::%d, %s", data_size, data);
 
     // multi-threading of m_logText is a problem (TODO: check this later)
     //wxString str;
