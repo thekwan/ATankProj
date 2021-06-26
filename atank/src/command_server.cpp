@@ -15,7 +15,7 @@
 #define UART0_BAUD_RATE     115200
 
 #define SPI0_DEVICE_FILE   "/dev/spidev0.0"
-#define SPI0_SPEED_HZ      1000000  // 1MHz
+#define SPI0_SPEED_HZ      100000  // 0.1MHz
 
 bool uart0_enabled = false;
 UartDriverLite uart0;
@@ -73,8 +73,7 @@ char tx[2], rx[1024];
 
 void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
     atank::Spi msg;
-    ros::Rate loop_rate(10);
-
+    //ros::Rate loop_rate(10);
 
     // message publisher loop
     while(ros::ok()) {
@@ -86,11 +85,14 @@ void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
             int data_size;
 
             tx[0] = 0xD;
+	    rx[0] = 0x0;
+	    rx[1] = 0x0;
 
             rx_len = spi0.SendAndReceiveBytes(tx, 1, rx, 2);
-            ROS_INFO("SpiDataSize:    (rx_len: %d)", rx_len);
+            ROS_INFO("SpiDatas = %x, %x", rx[0], rx[1]);
 
             data_size = (((int)rx[1]) << 8) | ((int)rx[0]);
+            ROS_INFO("SpiDataSize = %d", data_size);
 
             if (data_size > 1024) {
                 data_size = 1024;
