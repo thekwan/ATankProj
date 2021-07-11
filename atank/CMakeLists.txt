@@ -221,7 +221,7 @@ add_executable(command_server
 )
 
 target_link_libraries(command_server ${catkin_LIBRARIES})
-#add_dependencies(command_server atank_gencpp)
+add_dependencies(command_server atank_gencpp)
 
 add_executable(command_client 
     src/command_client.cpp
@@ -233,5 +233,5 @@ target_link_libraries(command_client
     ${wxWidgets_LIBRARIES}
     ${OpenCV_LIBRARIES}
 )
-#add_dependencies(command_client atank_gencpp)
+add_dependencies(command_client atank_gencpp)
 
