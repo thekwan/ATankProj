@@ -5,7 +5,7 @@
 #include <wx/timer.h>
 
 #include <thread>
-//#include <opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -32,7 +32,7 @@ typedef struct _KeyCodeInfo {
 } KeyCodeInfo;
 
 class KeyPadFrame;
-//class VideoFrame;
+class VideoFrame;
 class VideoPanel;
 
 class ATankFrame : public wxFrame
@@ -48,7 +48,7 @@ public:
         m_keypad_frame = nullptr;
     }
     void video_frame_closed(void) {
-        //m_video_frame = nullptr;
+        m_video_frame = nullptr;
     }
 
     void key_event_handler(KeyCodeInfo kinfo);
@@ -88,7 +88,7 @@ private:
     
     wxTextCtrl *m_logText;          // log window
     KeyPadFrame *m_keypad_frame;    // key frame handler
-    //VideoFrame  *m_video_frame;
+    VideoFrame  *m_video_frame;
 
     std::thread *_msg_thread;
 
@@ -126,7 +126,7 @@ private:
     std::vector<KeyCode> _valid_keycode;
 };
 
-#if 0
+#if 1
 class VideoFrame : public wxFrame
 {
 public:
@@ -146,8 +146,8 @@ class VideoPanel : public wxPanel
 {
     wxBitmap image;
     wxTimer  timer;
-    //cv::VideoCapture capture;
-    //cv::Mat frame;
+    cv::VideoCapture capture;
+    cv::Mat frame;
     //cv::Mat  capture;
 
     std::thread *draw_thread_;

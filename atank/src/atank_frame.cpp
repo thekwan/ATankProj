@@ -26,7 +26,7 @@ ros::Subscriber *_sub = nullptr;
 
 ATankFrame::ATankFrame(const wxString & title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxDefaultSize),
-    _ros_connected(false), m_keypad_frame(nullptr), /*m_video_frame(nullptr),*/
+    _ros_connected(false), m_keypad_frame(nullptr), m_video_frame(nullptr),
     _msg_thread(nullptr)
 {
     /*
@@ -156,9 +156,9 @@ ATankFrame::~ATankFrame()
     if (m_keypad_frame) {
         delete m_keypad_frame;
     }
-    //if (m_video_frame) {
-    //    delete m_video_frame;
-    //}
+    if (m_video_frame) {
+        delete m_video_frame;
+    }
 
     RosShutdown();
 
@@ -416,9 +416,9 @@ void ATankFrame::OnKeyControlPad(wxCommandEvent& WXUNUSED(event))
 
 void ATankFrame::OnVideoDisplay(wxCommandEvent &WXUNUSED(event))
 {
-    //if (m_video_frame == nullptr) {
-    //    m_video_frame = new VideoFrame("Video pannel", m_logText, this);
-    //}
+    if (m_video_frame == nullptr) {
+        m_video_frame = new VideoFrame("Video pannel", m_logText, this);
+    }
 }
 
 
@@ -754,7 +754,7 @@ void KeyPadFrame::OnKeyUp(wxKeyEvent& event) {
     }
 }
 
-#if 0
+#if 1
 // Video frame constructor
 VideoFrame::VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame *parent)
        : wxFrame(NULL, wxID_ANY, title), m_parent(parent), m_drawPanel(nullptr)
@@ -762,9 +762,7 @@ VideoFrame::VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame 
     m_logText = p_logText;
     m_logText->AppendText("Camera video display panel is opened.\n");
 
-    Connect(wxEVT_CLOSE_WINDOW,
-                        wxCloseEventHandler(VideoFrame::OnCloseWindow),
-                        NULL, this);
+    Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(VideoFrame::OnCloseWindow), NULL, this);
 
     // create image rendering panel
     m_drawPanel = new VideoPanel(this);
@@ -812,11 +810,10 @@ static void VideoFrameDrawer(VideoPanel *p) {
 VideoPanel::VideoPanel(wxFrame *parent)
     : wxPanel(parent), timer(this, TIMER_ID), draw_enable_(true), draw_thread_(nullptr)
 {
-    //capture = cv::VideoCapture("/home/deokhwan/Workspace/SLAM/ATAM/data/movie.avi");
-    capture = cv::VideoCapture("http://raspberrypi:8080/stream/video.mjpeg");
+    capture = cv::VideoCapture("/home/odroid/Downloads/bird.avi");
+    //capture = cv::VideoCapture("http://raspberrypi:8080/stream/video.mjpeg");
 
     capture.set(CV_CAP_PROP_BUFFERSIZE, 1);
-
 
     capture >> frame;
 
@@ -827,7 +824,7 @@ VideoPanel::VideoPanel(wxFrame *parent)
     wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
     image = wxBitmap(tmp);
 
-    timer.Start(1000/10);   // 10 fps
+    timer.Start(10);   // 10 fps (period: 100ms)
 
     //Connect(wxEVT_PAINT,
     //        wxPaintEventHandler(VideoPanel::paintEvent),
@@ -876,6 +873,10 @@ void VideoPanel::UpdateWindow(void)
 void VideoPanel::OnTimer(wxTimerEvent & event)
 {
     capture >> frame;
+
+    if (frame.rows == 0 || frame.cols == 0) {
+        return;
+    }
 
     if (frame.channels() == 3) {
         cv::cvtColor(frame, frame, CV_BGR2RGB);
