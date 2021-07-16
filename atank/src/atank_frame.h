@@ -92,6 +92,7 @@ private:
     VideoFrame  *m_video_frame;
 
     std::thread *_msg_thread;
+    FILE *_lidar_data_fp;
 
     /*
      * Tank move planer.

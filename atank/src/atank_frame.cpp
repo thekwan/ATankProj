@@ -19,7 +19,8 @@ const int wxID_SPI_CLOSE = 10;
 const int wxID_FW_VERSION = 11;
 
 #define ROS_SERVICE_TOPIC_NAME  "command"
-#define ROS_MESSAGE_TOPIC_NAME  "uart_msg"
+#define ROS_UART_MESSAGE_TOPIC_NAME  "uart_msg"
+#define ROS_SPI_MESSAGE_TOPIC_NAME   "spi_msg"
 
 ros::NodeHandle *_nh = nullptr;
 ros::ServiceClient *_client = nullptr;
@@ -203,6 +204,10 @@ void ATankFrame::RosShutdown(void)
         _client = nullptr;
     }
     _ros_connected = false;
+
+    if (_lidar_data_fp) {
+        fclose(_lidar_data_fp);
+    }
 }
 
 void ATankFrame::OnRosClose(wxCommandEvent & WXUNUSED(event))
@@ -213,13 +218,20 @@ void ATankFrame::OnRosClose(wxCommandEvent & WXUNUSED(event))
         _client = nullptr;
     }
     _ros_connected = false;
+
+    if (_lidar_data_fp) {
+        fclose(_lidar_data_fp);
+    }
 }
 
 static void RosMsgThreadWrapper(ATankFrame *p) {
     // Connect message client
-    std::string topic_name(ROS_MESSAGE_TOPIC_NAME);
+    std::string msg_topic_name(ROS_UART_MESSAGE_TOPIC_NAME);
     _sub = new ros::Subscriber;
-    *_sub = _nh->subscribe(ROS_MESSAGE_TOPIC_NAME, 1000, &ATankFrame::RosUartMsgCallback, p);
+    *_sub = _nh->subscribe(msg_topic_name, 1000, &ATankFrame::RosUartMsgCallback, p);
+
+    std::string spi_topic_name(ROS_SPI_MESSAGE_TOPIC_NAME);
+    *_sub = _nh->subscribe(spi_topic_name, 1000, &ATankFrame::RosSpiMsgCallback, p);
 
     ros::spin();
 }
@@ -239,6 +251,12 @@ void ATankFrame::OnRosOpen(wxCommandEvent & WXUNUSED(event))
 
         m_logText->AppendText("Success to open ROS connection.\n");
         _ros_connected = true;
+
+        // File open (Lidar data)
+        _lidar_data_fp = fopen("lidarData.dat", "wb");
+        if (_lidar_data_fp == NULL) {
+            ROS_INFO("[CMD client] Can't open the lidar data file.");
+        }
     }
 }
 
@@ -332,19 +350,15 @@ void ATankFrame::OnUartClose(wxCommandEvent & WXUNUSED(event))
 
 // SPI handlers
 void ATankFrame::RosSpiMsgCallback(const atank::Spi::ConstPtr & msg) {
+    char data[1024];
     int data_size = msg->data_size;
-    //ROS_INFO("[MSG CLIENT] SPI::%d", data_size);
 
-    char data[1024*3+1];
-    data[1024*3] = 0;
+    ROS_INFO("[MSG CLIENT] SPI::%d", data_size);
 
-    char *p_data = data;
     for(int i = 0; i < data_size; i++) {
-        sprintf(p_data, "%02x ", msg->data[i]);
-        p_data+= 3;
+        data[i] = msg->data[i];
     }
-
-    ROS_INFO("[MSG CLIENT] SPI::%d, %s", data_size, data);
+    fwrite(data, sizeof(char), data_size, _lidar_data_fp);
 
     // multi-threading of m_logText is a problem (TODO: check this later)
     //wxString str;
