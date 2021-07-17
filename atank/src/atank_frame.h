@@ -147,24 +147,25 @@ class VideoPanel : public wxPanel
     wxBitmap image;
     wxTimer  timer;
     cv::VideoCapture capture;
-    cv::Mat frame;
-    //cv::Mat  capture;
+    cv::Mat frame_gray;
+    wxTextCtrl *m_logText;
 
     std::thread *draw_thread_;
-    bool draw_enable_;
+    pthread_mutex_t videoDrawLocker_;
 
 public:
-    VideoPanel(wxFrame *parent);
+    VideoPanel(wxFrame *parent, wxTextCtrl *p_logText);
     ~VideoPanel(void);
 
     wxSize getImageSize(void);
 
+    bool draw_enable_;
+
     void paintEvent(wxPaintEvent & evt);
     void paintNow();
     void OnTimer(wxTimerEvent & evt);
-    void UpdateWindow(void);
+    void getCameraImage(void);
     void render(wxDC & dc);
-    bool isUpdateOk(void);
 };
 #endif
 

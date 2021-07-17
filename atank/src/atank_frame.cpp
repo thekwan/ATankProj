@@ -765,7 +765,7 @@ VideoFrame::VideoFrame(const wxString& title, wxTextCtrl *p_logText, ATankFrame 
     Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(VideoFrame::OnCloseWindow), NULL, this);
 
     // create image rendering panel
-    m_drawPanel = new VideoPanel(this);
+    m_drawPanel = new VideoPanel(this, m_logText);
 
     // layout
     wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
@@ -800,31 +800,39 @@ void VideoFrame::OnCloseWindow(wxCloseEvent & event)
 #define TIMER_ID 1000
 
 static void VideoFrameDrawer(VideoPanel *p) {
-    while(p->isUpdateOk()) {
-        p->UpdateWindow();
+    while(p->draw_enable_) {
+        p->getCameraImage();
     }
 
     return;
 }
 
-VideoPanel::VideoPanel(wxFrame *parent)
-    : wxPanel(parent), timer(this, TIMER_ID), draw_enable_(true), draw_thread_(nullptr)
+VideoPanel::VideoPanel(wxFrame *parent, wxTextCtrl *p_logText)
+    : wxPanel(parent), m_logText(p_logText), timer(this, TIMER_ID), 
+    draw_enable_(true), draw_thread_(nullptr)
 {
-    capture = cv::VideoCapture("/home/odroid/Downloads/bird.avi");
-    //capture = cv::VideoCapture("http://raspberrypi:8080/stream/video.mjpeg");
+    //capture = cv::VideoCapture("/home/odroid/Downloads/bird.avi");
+    capture = cv::VideoCapture("http://raspberrypi:8080/stream/video.mjpeg");
 
     capture.set(CV_CAP_PROP_BUFFERSIZE, 1);
 
-    capture >> frame;
+    cv::Mat frame_temp;
+    capture >> frame_temp;
 
-    if (frame.channels() == 3) {
-        cv::cvtColor(frame, frame, CV_BGR2RGB);
+    if (frame_temp.rows == 0 || frame_temp.cols == 0) {
+        m_logText->AppendText("[ERROR] Can't connect to the camera.\n");
+        return;
+    }
+    frame_gray = frame_temp;
+
+    if (frame_gray.channels() == 3) {
+        cv::cvtColor(frame_gray, frame_gray, CV_BGR2RGB);
     }
 
-    wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
+    wxImage tmp = wxImage(frame_gray.cols, frame_gray.rows, frame_gray.data, TRUE);
     image = wxBitmap(tmp);
 
-    timer.Start(10);   // 10 fps (period: 100ms)
+    timer.Start(100);   // 10 fps (period: 100ms)
 
     //Connect(wxEVT_PAINT,
     //        wxPaintEventHandler(VideoPanel::paintEvent),
@@ -833,8 +841,10 @@ VideoPanel::VideoPanel(wxFrame *parent)
     Connect(timer.GetId(), wxEVT_TIMER,
             wxTimerEventHandler(VideoPanel::OnTimer),
             NULL, this);
+
+    pthread_mutex_init(&videoDrawLocker_, NULL);
     
-    //draw_thread_ = new std::thread(VideoFrameDrawer, this);
+    draw_thread_ = new std::thread(VideoFrameDrawer, this);
 }
 
 VideoPanel::~VideoPanel(void)
@@ -851,38 +861,38 @@ void VideoPanel::paintEvent(wxPaintEvent & event)
     render(dc);
 }
 
-bool VideoPanel::isUpdateOk(void)
+void VideoPanel::getCameraImage(void)
 {
-    return draw_enable_;
-}
+    cv::Mat frame_temp;
+    capture >> frame_temp;
 
-void VideoPanel::UpdateWindow(void)
-{
-    capture >> frame;
-
-    if (frame.channels() == 3) {
-        cv::cvtColor(frame, frame, CV_BGR2RGB);
+    if (frame_temp.channels() == 3) {
+        cv::cvtColor(frame_temp, frame_temp, CV_BGR2RGB);
     }
+    //wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
 
-    wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
-    image = wxBitmap(tmp);
-
-    //paintNow();
+    pthread_mutex_lock(&videoDrawLocker_);
+    frame_gray = frame_temp;
+    pthread_mutex_unlock(&videoDrawLocker_);
 }
 
 void VideoPanel::OnTimer(wxTimerEvent & event)
 {
+#if 0
     capture >> frame;
-
-    if (frame.rows == 0 || frame.cols == 0) {
-        return;
-    }
 
     if (frame.channels() == 3) {
         cv::cvtColor(frame, frame, CV_BGR2RGB);
     }
+#endif
 
-    wxImage tmp = wxImage(frame.cols, frame.rows, frame.data, TRUE);
+    pthread_mutex_lock(&videoDrawLocker_);
+    if (frame_gray.rows == 0 || frame_gray.cols == 0) {
+        return;
+    }
+    wxImage tmp = wxImage(frame_gray.cols, frame_gray.rows, frame_gray.data, TRUE);
+    pthread_mutex_unlock(&videoDrawLocker_);
+
     image = wxBitmap(tmp);
 
     paintNow();
@@ -897,12 +907,14 @@ void VideoPanel::paintNow(void)
 void VideoPanel::render(wxDC & dc)
 {
     //m_logText->AppendText("render func is called.\n");
+    pthread_mutex_lock(&videoDrawLocker_);
     dc.DrawBitmap(image, 0, 0, false);
+    pthread_mutex_unlock(&videoDrawLocker_);
 }
 
 wxSize VideoPanel::getImageSize(void)
 {
-    return wxSize(frame.cols, frame.rows);
+    return wxSize(frame_gray.cols, frame_gray.rows);
 
 }
 #endif
