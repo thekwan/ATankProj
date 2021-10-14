@@ -823,6 +823,10 @@ VideoPanel::VideoPanel(wxFrame *parent, wxTextCtrl *p_logText)
         m_logText->AppendText("[ERROR] Can't connect to the camera.\n");
         return;
     }
+
+    videoFrameWriter.open("videoFrames.avi", cv::VideoWriter::fourcc('M','J','P','G'),\
+                10, cv::Size(frame_temp.cols, frame_temp.rows), true);
+
     frame_gray = frame_temp;
 
     if (frame_gray.channels() == 3) {
@@ -832,7 +836,7 @@ VideoPanel::VideoPanel(wxFrame *parent, wxTextCtrl *p_logText)
     wxImage tmp = wxImage(frame_gray.cols, frame_gray.rows, frame_gray.data, TRUE);
     image = wxBitmap(tmp);
 
-    timer.Start(100);   // 10 fps (period: 100ms)
+    timer.Start(66);   // 10 fps (period: 100ms)
 
     //Connect(wxEVT_PAINT,
     //        wxPaintEventHandler(VideoPanel::paintEvent),
@@ -853,6 +857,9 @@ VideoPanel::~VideoPanel(void)
     if (draw_thread_) {
         draw_thread_->join();
     }
+
+    capture.release();
+    videoFrameWriter.release();
 }
 
 void VideoPanel::paintEvent(wxPaintEvent & event)
@@ -865,6 +872,7 @@ void VideoPanel::getCameraImage(void)
 {
     cv::Mat frame_temp;
     capture >> frame_temp;
+    videoFrameWriter << frame_temp;
 
     if (frame_temp.channels() == 3) {
         cv::cvtColor(frame_temp, frame_temp, CV_BGR2RGB);

@@ -147,6 +147,7 @@ class VideoPanel : public wxPanel
     wxBitmap image;
     wxTimer  timer;
     cv::VideoCapture capture;
+    cv::VideoWriter  videoFrameWriter;
     cv::Mat frame_gray;
     wxTextCtrl *m_logText;
 
