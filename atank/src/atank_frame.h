@@ -78,6 +78,7 @@ private:
     void OnSpiClose(wxCommandEvent & WXUNUSED(event));
 
     void OnVideoDisplay(wxCommandEvent & WXUNUSED(event));
+    void OnFwVersionCheck(wxCommandEvent & WXUNUSED(event));
 
     /*
      * GUI member variables and functions

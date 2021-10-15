@@ -16,6 +16,7 @@ const int wxID_CLEAR_LOG = 7;
 const int wxID_VIDEO_OPEN = 8;
 const int wxID_SPI_OPEN = 9;
 const int wxID_SPI_CLOSE = 10;
+const int wxID_FW_VERSION = 11;
 
 #define ROS_SERVICE_TOPIC_NAME  "command"
 #define ROS_MESSAGE_TOPIC_NAME  "uart_msg"
@@ -65,6 +66,10 @@ ATankFrame::ATankFrame(const wxString & title)
 
     menuFile->Append(wxID_VIDEO_OPEN, "&Video open\tV",
             "Camera Video display open");
+    menuFile->AppendSeparator();
+
+    menuFile->Append(wxID_FW_VERSION, "Ver&sion check\tS",
+            "Atank firmware version check");
     menuFile->AppendSeparator();
 
 
@@ -132,6 +137,9 @@ ATankFrame::ATankFrame(const wxString & title)
 
     Connect(wxID_VIDEO_OPEN, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnVideoDisplay));
+
+    Connect(wxID_FW_VERSION, wxEVT_COMMAND_MENU_SELECTED,
+            wxCommandEventHandler(ATankFrame::OnFwVersionCheck));
 
     Connect(wxID_EXIT, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnQuit));
@@ -414,8 +422,35 @@ void ATankFrame::OnKeyControlPad(wxCommandEvent& WXUNUSED(event))
     }
 }
 
+void ATankFrame::OnFwVersionCheck(wxCommandEvent &WXUNUSED(event))
+{
+    atank::Command command;
+    command.request.cmd = std::string("version");
+    ROS_INFO("[INFO] OnFwVersionCheck func is called.");
+
+    if (! _ros_connected) {
+        ROS_INFO("[WARN] ROS is not connected net.");
+        return;
+    }
+
+    if (_client->call(command)) {
+        if (command.response.ack == true) {
+            ROS_INFO("[CMD client] Connection is tested and successful.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
+        }
+        else {
+            ROS_INFO("[CMD client] Connection is failed.");
+            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
+        }
+    }
+    else {
+        ROS_INFO("[CMD CLIENT] Failed to call service.");
+    }
+}
+
 void ATankFrame::OnVideoDisplay(wxCommandEvent &WXUNUSED(event))
 {
+
     if (m_video_frame == nullptr) {
         m_video_frame = new VideoFrame("Video pannel", m_logText, this);
     }
@@ -836,7 +871,11 @@ VideoPanel::VideoPanel(wxFrame *parent, wxTextCtrl *p_logText)
     wxImage tmp = wxImage(frame_gray.cols, frame_gray.rows, frame_gray.data, TRUE);
     image = wxBitmap(tmp);
 
-    timer.Start(66);   // 10 fps (period: 100ms)
+    //timer.Start(100);   // 10 fps (period: 100ms)
+    //timer.Start(66);    // 15 fps (period: 100ms)
+    //timer.Start(33);    // 30 fps (period: 100ms)
+    timer.Start(34);    // 30 fps (period: 100ms)
+    //timer.Start(17);      // 60 fps (period: 100ms)
 
     //Connect(wxEVT_PAINT,
     //        wxPaintEventHandler(VideoPanel::paintEvent),
