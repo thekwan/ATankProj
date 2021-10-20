@@ -11,7 +11,8 @@
 /*
  * UART configurations.
  */
-#define UART0_DEVICE_FILE   "/dev/ttyUSB0"
+//#define UART0_DEVICE_FILE   "/dev/ttyUSB0"
+#define UART0_DEVICE_FILE   "/dev/ttyS0"
 #define UART0_BAUD_RATE     115200
 
 #define SPI0_DEVICE_FILE   "/dev/spidev0.0"
@@ -30,6 +31,7 @@ std::string motor_control(struct command_list & clist);
 std::string uart_control(struct command_list & clist);
 std::string spi_control(struct command_list & clist);
 std::string led_control(struct command_list & clist);
+std::string version(struct command_list & clist);
 
 bool cmd_proc(atank::Command::Request & req,
               atank::Command::Response & res);
@@ -44,6 +46,7 @@ struct command_function command_function_list[] = {
     {   "uart",  uart_control    },
     {   "spi",   spi_control     },
     {   "led",   led_control     },
+    {   "version",   version     },
 
     {   nullptr, nullptr         }  // end marker
 };
@@ -64,8 +67,8 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
             //ROS_INFO("Rx %s", _msg.c_str());
         }
 
-        //ros::spinOnce();
-        //loop_rate.sleep();
+        ros::spinOnce();	// check it once again.
+        loop_rate.sleep();	// check it once again.
     }
 }
 
@@ -73,7 +76,7 @@ char tx[2], rx[1024];
 
 void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
     atank::Spi msg;
-    //ros::Rate loop_rate(10);
+    ros::Rate loop_rate(10);
     int i;
 
     // message publisher loop
@@ -108,8 +111,8 @@ void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
             msg_pub->publish(msg);
         }
 
-        //ros::spinOnce();
-        //loop_rate.sleep();
+        ros::spinOnce();	// check it once again.
+        loop_rate.sleep();	// check it once again.
     }
 }
 
@@ -329,6 +332,18 @@ std::string led_control(struct command_list & clist) {
     std::string log = "led_control::";
     ROS_INFO("[CMD SERVER] 'led_control' func is called.");
     check_command_list(clist);
+
+    log += "TODO (not implemented yet).";
+
+    return log;
+}
+
+std::string version(struct command_list & clist) {
+    std::string log = "version::";
+    ROS_INFO("[CMD SERVER] 'version' func is called.");
+    check_command_list(clist);
+
+    uart0.SendMessageUart(std::string("version"));
 
     log += "TODO (not implemented yet).";
 
