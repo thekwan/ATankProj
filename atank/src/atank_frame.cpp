@@ -9,8 +9,6 @@
 const int wxID_ROS_OPEN = 1;
 const int wxID_ROS_CLOSE = 2;
 const int wxID_ROS_TEST = 5;
-const int wxID_UART_OPEN = 3;
-const int wxID_UART_CLOSE = 4;
 const int wxID_KEYCTRL_PAD = 6;
 const int wxID_CLEAR_LOG = 7;
 const int wxID_VIDEO_OPEN = 8;
@@ -19,7 +17,6 @@ const int wxID_SPI_CLOSE = 10;
 const int wxID_FW_VERSION = 11;
 
 #define ROS_SERVICE_TOPIC_NAME  "command"
-#define ROS_UART_MESSAGE_TOPIC_NAME  "uart_msg"
 #define ROS_SPI_MESSAGE_TOPIC_NAME   "spi_msg"
 
 ros::NodeHandle *_nh = nullptr;
@@ -28,8 +25,8 @@ ros::Subscriber *_sub = nullptr;
 
 ATankFrame::ATankFrame(const wxString & title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxDefaultSize),
-    _ros_connected(false), m_keypad_frame(nullptr), m_video_frame(nullptr),
-    _msg_thread(nullptr)
+    _ros_connected(false), m_keypad_frame(nullptr), m_video_frame(nullptr)
+    //_msg_thread(nullptr)
 {
     /*
      * Menubar and Menu.
@@ -54,14 +51,10 @@ ATankFrame::ATankFrame(const wxString & title)
     menuFile->AppendSeparator();
 
 
-    menuFile->Append(wxID_UART_OPEN, "&UART open\tU", 
-            "UART connection open to control tank.");
-    menuFile->Append(wxID_UART_CLOSE, "U&ART close\tA", 
-            "UART connection close.");
     menuFile->Append(wxID_SPI_OPEN, "S&PI open\tU", 
-            "UART connection open to control tank.");
+            "SPI connection open to control tank.");
     menuFile->Append(wxID_SPI_CLOSE, "SP&I close\tA", 
-            "UART connection close.");
+            "SPI connection close.");
     menuFile->AppendSeparator();
 
 
@@ -127,10 +120,6 @@ ATankFrame::ATankFrame(const wxString & title)
     Connect(wxID_KEYCTRL_PAD, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnKeyControlPad));
 
-    Connect(wxID_UART_OPEN, wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(ATankFrame::OnUartOpen));
-    Connect(wxID_UART_CLOSE, wxEVT_COMMAND_MENU_SELECTED,
-            wxCommandEventHandler(ATankFrame::OnUartClose));
     Connect(wxID_SPI_OPEN, wxEVT_COMMAND_MENU_SELECTED,
             wxCommandEventHandler(ATankFrame::OnSpiOpen));
     Connect(wxID_SPI_CLOSE, wxEVT_COMMAND_MENU_SELECTED,
@@ -171,9 +160,9 @@ ATankFrame::~ATankFrame()
 
     RosShutdown();
 
-    if (_msg_thread) {
-        _msg_thread->join();
-    }
+    //if (_msg_thread) {
+    //    _msg_thread->join();
+    //}
 }
 
 void ATankFrame::OnQuit(wxCommandEvent & WXUNUSED(event))
@@ -224,18 +213,6 @@ void ATankFrame::OnRosClose(wxCommandEvent & WXUNUSED(event))
     }
 }
 
-static void RosMsgThreadWrapper(ATankFrame *p) {
-    // Connect message client
-    std::string msg_topic_name(ROS_UART_MESSAGE_TOPIC_NAME);
-    _sub = new ros::Subscriber;
-    *_sub = _nh->subscribe(msg_topic_name, 1000, &ATankFrame::RosUartMsgCallback, p);
-
-    std::string spi_topic_name(ROS_SPI_MESSAGE_TOPIC_NAME);
-    *_sub = _nh->subscribe(spi_topic_name, 1000, &ATankFrame::RosSpiMsgCallback, p);
-
-    ros::spin();
-}
-
 void ATankFrame::OnRosOpen(wxCommandEvent & WXUNUSED(event))
 {
     if (_ros_connected == false) {
@@ -246,8 +223,8 @@ void ATankFrame::OnRosOpen(wxCommandEvent & WXUNUSED(event))
         ROS_INFO("[CMD client] Service instance is initialized.");
 
         // Connect message client
-        _msg_thread = new std::thread(RosMsgThreadWrapper, this);
-        ROS_INFO("[CMD client] Message scriber is initialized.");
+        //_msg_thread = new std::thread(RosMsgThreadWrapper, this);
+        //ROS_INFO("[CMD client] Message scriber is initialized.");
 
         m_logText->AppendText("Success to open ROS connection.\n");
         _ros_connected = true;
@@ -282,69 +259,6 @@ void ATankFrame::OnRosTest(wxCommandEvent & WXUNUSED(event))
     }
     else {
         ROS_INFO("[CMD CLIENT] there is no connection.");
-    }
-}
-
-//void ATankFrame::RosUartMsgCallback(const atank::UartConstPtr & uart) {
-void ATankFrame::RosUartMsgCallback(const std_msgs::String::ConstPtr & msg) {
-    ROS_INFO("[MSG CLIENT] UART::%s", msg->data.c_str());
-
-    // multi-threading of m_logText is a problem (TODO: check this later)
-    //wxString str;
-    //str.Printf("[STM_UART_LOG] %s", msg->data.c_str());
-    //m_logText->AppendText(str);
-}
-
-// UART handlers
-void ATankFrame::OnUartOpen(wxCommandEvent & WXUNUSED(event))
-{
-    //m_logText->AppendText(wxString("[INFO] OnUartOpen() is called.\n"));
-    atank::Command command;
-    command.request.cmd = std::string("uart.open");
-
-    if (! _ros_connected) {
-        ROS_INFO("[WARN] ROS is not connected net.");
-        return;
-    }
-
-    if (_client->call(command)) {
-        if (command.response.ack == true) {
-            ROS_INFO("[CMD client] Connection is tested and successful.");
-            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
-        }
-        else {
-            ROS_INFO("[CMD client] Connection is failed.");
-            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
-        }
-    }
-    else {
-        ROS_INFO("[CMD CLIENT] Failed to call service.");
-    }
-}
-
-void ATankFrame::OnUartClose(wxCommandEvent & WXUNUSED(event))
-{
-    //m_logText->AppendText(wxString("[INFO] OnUartClose() is called.\n"));
-    atank::Command command;
-    command.request.cmd = std::string("uart.close");
-
-    if (! _ros_connected) {
-        ROS_INFO("[WARN] ROS is not connected net.");
-        return;
-    }
-
-    if (_client->call(command)) {
-        if (command.response.ack == true) {
-            ROS_INFO("[CMD client] Connection is tested and successful.");
-            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
-        }
-        else {
-            ROS_INFO("[CMD client] Connection is failed.");
-            ROS_INFO("   - feedback log: %s", command.response.log.c_str());
-        }
-    }
-    else {
-        ROS_INFO("[CMD CLIENT] Failed to call service.");
     }
 }
 

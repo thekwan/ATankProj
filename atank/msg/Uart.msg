@@ -1,1 +1,0 @@
-string log_message

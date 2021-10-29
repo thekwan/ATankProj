@@ -10,7 +10,6 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "atank/Command.h"
-#include "atank/Uart.h"
 #include "atank/Spi.h"
 #include "atank_planner.h"
 
@@ -52,7 +51,6 @@ public:
     }
 
     void key_event_handler(KeyCodeInfo kinfo);
-    void RosUartMsgCallback(const std_msgs::String::ConstPtr & uart);
     void RosSpiMsgCallback(const atank::Spi::ConstPtr & spi);
 
 private:
@@ -72,8 +70,6 @@ private:
     void OnClear(wxCommandEvent& WXUNUSED(event)) { m_logText->Clear(); }
     void OnKeyControlPad(wxCommandEvent& WXUNUSED(event));
 
-    void OnUartOpen(wxCommandEvent & WXUNUSED(event));
-    void OnUartClose(wxCommandEvent & WXUNUSED(event));
     void OnSpiOpen(wxCommandEvent & WXUNUSED(event));
     void OnSpiClose(wxCommandEvent & WXUNUSED(event));
 
@@ -91,7 +87,7 @@ private:
     KeyPadFrame *m_keypad_frame;    // key frame handler
     VideoFrame  *m_video_frame;
 
-    std::thread *_msg_thread;
+    //std::thread *_msg_thread;
     FILE *_lidar_data_fp;
 
     /*
