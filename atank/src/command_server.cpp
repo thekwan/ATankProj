@@ -231,10 +231,7 @@ std::string motor_control(struct command_list & clist) {
             uart0.SendMessageUart(std::string("rf"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
-            uart0.SendMessageUart(std::string("lsu"));
-            uart0.ReceiveMessageUart(ack_);
-            log += ack_;
-            uart0.SendMessageUart(std::string("rsu"));
+            uart0.SendMessageUart(std::string("bsu"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
         }
@@ -242,10 +239,7 @@ std::string motor_control(struct command_list & clist) {
             uart0.SendMessageUart(std::string("rb"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
-            uart0.SendMessageUart(std::string("lsu"));
-            uart0.ReceiveMessageUart(ack_);
-            log += ack_;
-            uart0.SendMessageUart(std::string("rsu"));
+            uart0.SendMessageUart(std::string("bsu"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
         }
@@ -263,10 +257,7 @@ std::string motor_control(struct command_list & clist) {
             uart0.SendMessageUart(std::string("lt"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
-            uart0.SendMessageUart(std::string("lsu"));
-            uart0.ReceiveMessageUart(ack_);
-            log += ack_;
-            uart0.SendMessageUart(std::string("rsu"));
+            uart0.SendMessageUart(std::string("bsu"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
         }
@@ -279,10 +270,7 @@ std::string motor_control(struct command_list & clist) {
             uart0.SendMessageUart(std::string("rt"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
-            uart0.SendMessageUart(std::string("lsu"));
-            uart0.ReceiveMessageUart(ack_);
-            log += ack_;
-            uart0.SendMessageUart(std::string("rsu"));
+            uart0.SendMessageUart(std::string("bsu"));
             uart0.ReceiveMessageUart(ack_);
             log += ack_;
         }
