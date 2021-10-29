@@ -213,15 +213,20 @@ add_definitions("-std=gnu++11 -g")
 message("Found wxWidgets version: ${wxWidgets_VERSION}")
 include(${wxWidgets_USE_FILE})
 
+#####################
+# Command server
+#####################
 add_executable(command_server 
     src/command_server.cpp 
     src/uart.cc
     src/spi.cc
 )
-
 target_link_libraries(command_server ${catkin_LIBRARIES})
 add_dependencies(command_server atank_gencpp)
 
+#####################
+# Command client
+#####################
 add_executable(command_client 
     src/command_client.cpp
     src/atank_frame.cpp
@@ -233,4 +238,14 @@ target_link_libraries(command_client
     ${OpenCV_LIBRARIES}
 )
 add_dependencies(command_client atank_gencpp)
+
+#############################
+# Camera recoder tester
+#############################
+add_executable(camera_recoder
+    src/camera_recoder.cpp 
+)
+target_link_libraries(camera_recoder ${catkin_LIBRARIES})
+add_dependencies(camera_recoder atank_gencpp)
+
 
