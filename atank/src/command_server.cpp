@@ -43,7 +43,7 @@ struct command_function{
 
 struct command_function command_function_list[] = {
     {   "motor", motor_control   },
-    {   "uart",  uart_control    },
+    //{   "uart",  uart_control    },
     {   "spi",   spi_control     },
     {   "led",   led_control     },
     {   "version",   version     },
@@ -51,6 +51,7 @@ struct command_function command_function_list[] = {
     {   nullptr, nullptr         }  // end marker
 };
 
+#if 0
 void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
     std_msgs::String msg;
     ros::Rate loop_rate(10);
@@ -71,6 +72,7 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
         loop_rate.sleep();	// check it once again.
     }
 }
+#endif
 
 char tx[2], rx[1024];
 
@@ -129,14 +131,17 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "command_server");
     ros::NodeHandle n;
 
+    // UART open.
+    uart0.Open(UART0_DEVICE_FILE, UART0_BAUD_RATE);
+
     signal(SIGINT, mySignalHandler);
 
     // "command": topic name
     ros::ServiceServer svr_server = n.advertiseService("command", cmd_proc);
     ROS_INFO("[CMD SERVER] command server is ready to process.");
 
-    ros::Publisher     uart_msg_pub = n.advertise<std_msgs::String> ("uart_msg", 1000);
-    std::thread _msg_t0(MessagePublisherThreadWrapperUart, &uart_msg_pub);
+    //ros::Publisher     uart_msg_pub = n.advertise<std_msgs::String> ("uart_msg", 1000);
+    //std::thread _msg_t0(MessagePublisherThreadWrapperUart, &uart_msg_pub);
 
     ros::Publisher     spi_msg_pub = n.advertise<atank::Spi> ("spi_msg", 1000);
     std::thread _msg_t1(MessagePublisherThreadWrapperSpi, &spi_msg_pub);
@@ -145,7 +150,7 @@ int main(int argc, char *argv[])
 
     ros::spin();
 
-    _msg_t0.join();
+    //_msg_t0.join();
     _msg_t1.join();
 
     return 0;
@@ -219,23 +224,35 @@ std::string motor_control(struct command_list & clist) {
     check_command_list(clist);
 
     //log += "TODO (not implemented yet).";
+    std::string ack_;
 
     if (clist.args[0].compare("both") == 0) {
         if (clist.args[1].compare("fw") == 0) {
             uart0.SendMessageUart(std::string("rf"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("lsu"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("rsu"));
-            log += "UART sent message 'rf'+'lsu'+'rsu'";
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
         }
         else if (clist.args[1].compare("bw") == 0) {
             uart0.SendMessageUart(std::string("rb"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("lsu"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("rsu"));
-            log += "UART sent message 'rb'+'lsu'+'rsu'";
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
         }
         else if (clist.args[1].compare("stop") == 0) {
             uart0.SendMessageUart(std::string("st"));
-            log += "UART sent message 'st'";
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
         }
         else {
             log += "Unknown UART arg[1].";
@@ -244,9 +261,14 @@ std::string motor_control(struct command_list & clist) {
     else if (clist.args[0].compare("right") == 0) {
         if (clist.args[1].compare("fw") == 0) {
             uart0.SendMessageUart(std::string("lt"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("lsu"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("rsu"));
-            log += "UART sent message 'lt'+'lsu'+'rsu'";
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
         }
         else {
             log += "Unknown UART arg[1].";
@@ -255,9 +277,14 @@ std::string motor_control(struct command_list & clist) {
     else if (clist.args[0].compare("left") == 0) {
         if (clist.args[1].compare("fw") == 0) {
             uart0.SendMessageUart(std::string("rt"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("lsu"));
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
             uart0.SendMessageUart(std::string("rsu"));
-            log += "UART sent message 'rt'+'lsu'+'rsu'";
+            uart0.ReceiveMessageUart(ack_);
+            log += ack_;
         }
         else {
             log += "Unknown UART arg[1].";
@@ -270,6 +297,7 @@ std::string motor_control(struct command_list & clist) {
     return log;
 }
 
+#if 0
 std::string uart_control(struct command_list & clist) {
     std::string log = "uart_control::";
     ROS_INFO("[CMD SERVER] 'uart_control' func is called.");
@@ -298,6 +326,7 @@ std::string uart_control(struct command_list & clist) {
 
     return log;
 }
+#endif
 
 std::string spi_control(struct command_list & clist) {
     std::string log = "spi_control::";
@@ -343,9 +372,12 @@ std::string version(struct command_list & clist) {
     ROS_INFO("[CMD SERVER] 'version' func is called.");
     check_command_list(clist);
 
+    // send command message
     uart0.SendMessageUart(std::string("version"));
 
-    log += "TODO (not implemented yet).";
+    // receive ack message
+    std::string _msg("No response from UART");
+    uart0.ReceiveMessageUart(_msg);
 
-    return log;
+    return log + _msg;
 }
