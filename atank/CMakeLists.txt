@@ -245,7 +245,10 @@ add_dependencies(command_client atank_gencpp)
 add_executable(camera_recoder
     src/camera_recoder.cpp 
 )
-target_link_libraries(camera_recoder ${catkin_LIBRARIES})
+target_link_libraries(camera_recoder 
+    ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+)
 add_dependencies(camera_recoder atank_gencpp)
 
 

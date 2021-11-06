@@ -6,6 +6,7 @@
 #include <thread>
 #include <queue>
 #include <signal.h>
+#include <opencv2/opencv.hpp>
 
 void mySignalHandler(int sig) {
     ROS_INFO("Signal handler is called. Server will be terminated.");
@@ -38,10 +39,13 @@ public:
             std::this_thread::sleep_for(std::chrono::milliseconds(TIME_TO_SLEEP));
         }
         else if (cmd.compare("left_turn") == 0) {
-            requestRosService("left.motor.fw");
+            requestRosService("motor.left.fw");
         }
         else if (cmd.compare("right_turn") == 0) {
-            requestRosService("right.motor.fw");
+            requestRosService("motor.right.fw");
+        }
+        else if (cmd.compare("stop") == 0) {
+            requestRosService("motor.both.stop");
         }
         else if (cmd.compare("version") == 0) {
             requestRosService("version");
@@ -73,6 +77,46 @@ private:
     std::queue<std::string> cmd_queue_;
 };
 
+bool videoRecoderEnable = true;
+
+void videoRecoder(const char *recordFileName) {
+    cv::VideoCapture capture;
+    cv::VideoWriter  videoFrameWriter;
+
+    capture = cv::VideoCapture("http://raspberrypi:8080/stream/video.mjpeg");
+    capture.set(CV_CAP_PROP_BUFFERSIZE, 1);
+
+
+    /* Open video frame, and check the validity
+     */
+    cv::Mat frame;
+    capture >> frame;
+    if (frame.rows == 0 || frame.cols == 0) {
+        ROS_INFO("[ERROR] Can't connect to the camera.\n");
+        return;
+    }
+
+    /* Open video frame writer.
+     */
+    videoFrameWriter.open(recordFileName, cv::VideoWriter::fourcc('M','J','P','G'),\
+                10, cv::Size(frame.cols, frame.rows), true);
+
+
+    /* Write video frame continuously.
+     */
+    while(videoRecoderEnable) {
+        capture >> frame;
+
+        if (frame.channels() == 3) {
+            cv::cvtColor(frame, frame, CV_BGR2RGB);
+        }
+
+        videoFrameWriter << frame;
+    }
+ 
+    return;
+}
+
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "camera_recoder");
@@ -80,19 +124,37 @@ int main(int argc, char *argv[])
 
     ROS_INFO("[CameraRecoder] initialization is successful.");
 
+    std::thread *videoRecordThread = new std::thread(videoRecoder, "featureTrackingTest.avi");
+
     signal(SIGINT, mySignalHandler);
 
     // "command": topic name
     CommandProcessor cproc(n);
 
-    cproc.pushCommand("wait_10ms");
     cproc.pushCommand("version");
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+
+    cproc.pushCommand("left_turn");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("stop");
+    cproc.pushCommand("wait_10ms");
+
+    cproc.pushCommand("right_turn");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("stop");
+    cproc.pushCommand("wait_10ms");
+
 
     while(cproc.size() > 0) {
         cproc.executeCommand();
     }
+
+    videoRecoderEnable = false;
+    videoRecordThread->join();
 
     return 0;
 }
