@@ -298,10 +298,11 @@ std::string uart_control(struct command_list & clist) {
         return log;
     }
 
-    std::string ack_;
-    uart0.SendMessageUart(clist.args[1]);
-    uart0.ReceiveMessageUart(ack_);
-    log += ack_;
+    uart0.SendMessageUart(clist.args[0]);
+
+    std::string _msg("No response from UART");
+    uart0.ReceiveMessageUart(_msg);
+    log += _msg;
 
     return log;
 }
