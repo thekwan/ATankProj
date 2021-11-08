@@ -39,13 +39,15 @@ public:
             std::this_thread::sleep_for(std::chrono::milliseconds(TIME_TO_SLEEP));
         }
         else if (cmd.compare("left_turn") == 0) {
-            requestRosService("motor.left.fw");
+            requestRosService("uart.lt");
+            requestRosService("uart.set_speed_15");
         }
         else if (cmd.compare("right_turn") == 0) {
-            requestRosService("motor.right.fw");
+            requestRosService("uart.rt");
+            requestRosService("uart.set_speed_15");
         }
         else if (cmd.compare("stop") == 0) {
-            requestRosService("motor.both.stop");
+            requestRosService("uart.st");
         }
         else if (cmd.compare("version") == 0) {
             requestRosService("version");
@@ -137,7 +139,7 @@ int main(int argc, char *argv[])
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
 
-    cproc.pushCommand("left_turn");
+    cproc.pushCommand("right_turn");
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
@@ -147,7 +149,7 @@ int main(int argc, char *argv[])
     cproc.pushCommand("stop");
     cproc.pushCommand("wait_10ms");
 
-    cproc.pushCommand("right_turn");
+    cproc.pushCommand("left_turn");
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
