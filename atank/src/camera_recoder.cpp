@@ -99,7 +99,7 @@ void videoRecoder(const char *recordFileName) {
     /* Open video frame writer.
      */
     videoFrameWriter.open(recordFileName, cv::VideoWriter::fourcc('M','J','P','G'),\
-                10, cv::Size(frame.cols, frame.rows), true);
+                20, cv::Size(frame.cols, frame.rows), true);
 
 
     /* Write video frame continuously.
@@ -109,6 +109,7 @@ void videoRecoder(const char *recordFileName) {
 
         if (frame.channels() == 3) {
             cv::cvtColor(frame, frame, CV_BGR2RGB);
+            //cv::cvtColor(frame, frame, CV_BGR2GRAY);
         }
 
         videoFrameWriter << frame;
@@ -139,15 +140,29 @@ int main(int argc, char *argv[])
     cproc.pushCommand("left_turn");
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
     cproc.pushCommand("stop");
     cproc.pushCommand("wait_10ms");
 
     cproc.pushCommand("right_turn");
     cproc.pushCommand("wait_10ms");
     cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
     cproc.pushCommand("stop");
     cproc.pushCommand("wait_10ms");
 
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
+    cproc.pushCommand("wait_10ms");
 
     while(cproc.size() > 0) {
         cproc.executeCommand();
