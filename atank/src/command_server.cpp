@@ -27,7 +27,7 @@ struct command_list {
     std::vector<std::string> args;
 };
 
-std::string motor_control(struct command_list & clist);
+//std::string motor_control(struct command_list & clist);
 std::string uart_control(struct command_list & clist);
 std::string spi_control(struct command_list & clist);
 std::string led_control(struct command_list & clist);
@@ -42,8 +42,8 @@ struct command_function{
 };
 
 struct command_function command_function_list[] = {
-    {   "motor", motor_control   },
-    //{   "uart",  uart_control    },
+    //{   "motor", motor_control   },
+    {   "uart",  uart_control    },
     {   "spi",   spi_control     },
     {   "led",   led_control     },
     {   "version",   version     },
@@ -218,6 +218,7 @@ void check_command_list(struct command_list & clist) {
     }
 }
 
+#if 0
 std::string motor_control(struct command_list & clist) {
     std::string log = "motor_control::";
     ROS_INFO("[CMD SERVER] 'motor_control' func is called.");
@@ -284,8 +285,8 @@ std::string motor_control(struct command_list & clist) {
 
     return log;
 }
+#endif
 
-#if 0
 std::string uart_control(struct command_list & clist) {
     std::string log = "uart_control::";
     ROS_INFO("[CMD SERVER] 'uart_control' func is called.");
@@ -297,24 +298,13 @@ std::string uart_control(struct command_list & clist) {
         return log;
     }
 
-    // check the argument list
-    if (clist.args[0].compare("open") == 0) {
-        uart0.Open(UART0_DEVICE_FILE, UART0_BAUD_RATE);
-        if (uart0.isOpened()) {
-            log += "UART is opened. ";
-        }
-        else {
-            log += "UART open is failed. ";
-        }
-    }
-    else if (clist.args[0].compare("close") == 0) {
-        uart0.Close();
-        log += "UART is closed. ";
-    }
+    std::string ack_;
+    uart0.SendMessageUart(clist.args[1]);
+    uart0.ReceiveMessageUart(ack_);
+    log += ack_;
 
     return log;
 }
-#endif
 
 std::string spi_control(struct command_list & clist) {
     std::string log = "spi_control::";
