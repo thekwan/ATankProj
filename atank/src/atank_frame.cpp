@@ -800,9 +800,10 @@ VideoPanel::VideoPanel(wxFrame *parent, wxTextCtrl *p_logText)
     image = wxBitmap(tmp);
 
     //timer.Start(100);   // 10 fps (period: 100ms)
+    //timer.Start(50);   // 20 fps (period: 100ms)
     //timer.Start(66);    // 15 fps (period: 100ms)
-    //timer.Start(33);    // 30 fps (period: 100ms)
-    timer.Start(34);    // 30 fps (period: 100ms)
+    timer.Start(33);    // 30 fps (period: 100ms)
+    //timer.Start(34);    // 30 fps (period: 100ms)
     //timer.Start(17);      // 60 fps (period: 100ms)
 
     //Connect(wxEVT_PAINT,
