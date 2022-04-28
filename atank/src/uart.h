@@ -26,6 +26,7 @@ public:
     int  ReceiveMessageUart(std::string &message);
     void SendByte(const char *data);
     int  ReceiveByte(char *data);
+    int  ReceiveByte(char *data, int size);
     bool isOpened(void);
 
 private:

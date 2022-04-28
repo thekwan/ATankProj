@@ -219,6 +219,24 @@ void UartDriverLite::SendByte(const char *data) {
     write(uart_fd, data, sizeof(char));
 }
 
+int  UartDriverLite::ReceiveByte(char *data, int size) {
+    if (!_open_success) {
+        //std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;
+        return 0;
+    }
+
+    int res = read(uart_fd, data, sizeof(char)*size);
+
+#if defined(_DEBUG_ENABLE_)
+    std::ios state(NULL);
+    state.copyfmt(std::cout);
+    std::cout << "RX Byte[0x" << std::hex << (*data & 0xFF) << "]\n";
+    std::cout.copyfmt(state);
+#endif
+
+    return res;
+}
+
 int  UartDriverLite::ReceiveByte(char *data) {
     if (!_open_success) {
         //std::cerr << "[ERROR] UART terminal is not opened!" << std::endl;

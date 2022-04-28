@@ -2,6 +2,7 @@
 #include "std_msgs/String.h"
 #include "atank/Command.h"
 #include "atank/Spi.h"
+#include "atank/LidarFrame.h"
 #include "uart.h"
 #include "spi.h"
 
@@ -74,6 +75,39 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
 }
 #endif
 
+void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
+    atank::LidarFrame dataframe;
+    ros::Rate loop_rate(10);
+    int ridx, widx;
+
+    // message publisher loop
+    while(ros::ok()) {
+        char rxBytes[1024];
+
+        // check uart is opend.
+        if (uart0.isOpened()) {
+            ridx = 0;
+            int rxSize = uart0.ReceiveByte(rxBytes, 1024);
+            
+            ROS_INFO("uart0.ReceiveByte = %d", rxSize);
+
+            while (ridx < rxSize) {
+                while (widx < 36 && ridx < rxSize) {
+                    dataframe.data[widx++] = rxBytes[ridx++];
+                }
+                if (widx == 36) {
+                    msg_pub->publish(dataframe);
+                    widx = 0;
+                    ROS_INFO("msg_pub->publish() [%d,%d]", ridx, widx);
+                }
+            }
+        }
+
+        ros::spinOnce();	// check it once again.
+        loop_rate.sleep();	// check it once again.
+    }
+}
+
 char tx[2], rx[1024];
 
 void MessagePublisherThreadWrapperSpi(ros::Publisher *msg_pub) {
@@ -140,18 +174,23 @@ int main(int argc, char *argv[])
     ros::ServiceServer svr_server = n.advertiseService("command", cmd_proc);
     ROS_INFO("[CMD SERVER] command server is ready to process.");
 
-    //ros::Publisher     uart_msg_pub = n.advertise<std_msgs::String> ("uart_msg", 1000);
-    //std::thread _msg_t0(MessagePublisherThreadWrapperUart, &uart_msg_pub);
-
+#if 1   // LIDAR data frame captured by USART is published.
+    ros::Publisher     lidar_data_pub = n.advertise<atank::LidarFrame> ("lidar_frame", 1000);
+    std::thread _msg_t0(MessagePublisherThreadWrapperUart, &lidar_data_pub);
+#else   // LIDAR data frame captured by SPI is published.
     ros::Publisher     spi_msg_pub = n.advertise<atank::Spi> ("spi_msg", 1000);
     std::thread _msg_t1(MessagePublisherThreadWrapperSpi, &spi_msg_pub);
+#endif
 
     ROS_INFO("[CMD SERVER] message server is ready to process.");
 
     ros::spin();
 
-    //_msg_t0.join();
+#if 1   // LIDAR data frame captured by USART is published.
+    _msg_t0.join();
+#else   // LIDAR data frame captured by SPI is published.
     _msg_t1.join();
+#endif
 
     return 0;
 }
