@@ -28,6 +28,8 @@ public:
     int  ReceiveByte(char *data);
     int  ReceiveByte(char *data, int size);
     bool isOpened(void);
+    void setModeCanonical(void);
+    void setModeNonCanonical(int vmin, int vtime);
 
 private:
     const char *_device;

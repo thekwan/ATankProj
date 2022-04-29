@@ -45,6 +45,30 @@ void UartDriverLite::Open(const char *device) {
     _open_success = true;
 }
 
+void UartDriverLite::setModeCanonical(void) {
+    /*
+    이제 modem 라인을 초기화하고 포트 세팅을 마친다.
+    */
+    tcflush(uart_fd, TCIFLUSH);
+    tcgetattr(uart_fd, &newtio); /* save current serial port settings */
+    newtio.c_lflag = ICANON;
+    tcsetattr(uart_fd,TCSANOW,&newtio);
+}
+
+void UartDriverLite::setModeNonCanonical(int vmin, int vtime) {
+    /*
+    이제 modem 라인을 초기화하고 포트 세팅을 마친다.
+    */
+    tcflush(uart_fd, TCIFLUSH);
+    tcgetattr(uart_fd, &newtio); /* save current serial port settings */
+    //newtio.c_lflag &= ~(ICANON);
+    //newtio.c_lflag &= ~(ECHO | ECHOE);
+    newtio.c_lflag &= 0;
+    newtio.c_cc[VMIN] = vmin;
+    newtio.c_cc[VTIME] = vtime;
+    tcsetattr(uart_fd,TCSANOW,&newtio);
+}
+
 void UartDriverLite::Open(const char *device, int baud_rate) {
     //int fd,c, res;
     char buf[255];
@@ -74,6 +98,9 @@ void UartDriverLite::Open(const char *device, int baud_rate) {
     //newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
     if (baud_rate == 115200) {
         newtio.c_cflag = B115200 | CS8 | CLOCAL | CREAD;
+    }
+    else if (baud_rate == 230400) {
+        newtio.c_cflag = B230400 | CS8 | CLOCAL | CREAD;
     }
     else if (baud_rate == 38400) {
         newtio.c_cflag = B38400 | CS8 | CLOCAL | CREAD;

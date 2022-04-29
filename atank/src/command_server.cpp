@@ -14,7 +14,7 @@
  */
 //#define UART0_DEVICE_FILE   "/dev/ttyUSB0"
 #define UART0_DEVICE_FILE   "/dev/ttyS0"
-#define UART0_BAUD_RATE     115200
+#define UART0_BAUD_RATE     230400
 
 #define SPI0_DEVICE_FILE   "/dev/spidev0.0"
 #define SPI0_SPEED_HZ      100000  // 0.1MHz
@@ -78,29 +78,38 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
 void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
     atank::LidarFrame dataframe;
     ros::Rate loop_rate(10);
-    int ridx, widx;
-
     // message publisher loop
+    int ridx, widx = 0;
+
+
     while(ros::ok()) {
-        char rxBytes[1024];
+        char rxBytes[2048];
 
         // check uart is opend.
         if (uart0.isOpened()) {
-            ridx = 0;
-            int rxSize = uart0.ReceiveByte(rxBytes, 1024);
+            int rxSize = uart0.ReceiveByte(rxBytes, 2048);
             
             ROS_INFO("uart0.ReceiveByte = %d", rxSize);
 
+#if 1
+	    dataframe.size = (uint16_t) rxSize;
+            for(int i = 0; i < rxSize; i++) {
+                dataframe.data.push_back(rxBytes[i]);
+            }
+            msg_pub->publish(dataframe);
+#else
+            ridx = 0;
             while (ridx < rxSize) {
                 while (widx < 36 && ridx < rxSize) {
                     dataframe.data[widx++] = rxBytes[ridx++];
                 }
                 if (widx == 36) {
                     msg_pub->publish(dataframe);
+                    //ROS_INFO("msg_pub->publish() [%d,%d]", ridx, widx);
                     widx = 0;
-                    ROS_INFO("msg_pub->publish() [%d,%d]", ridx, widx);
                 }
             }
+#endif
         }
 
         ros::spinOnce();	// check it once again.
@@ -166,7 +175,13 @@ int main(int argc, char *argv[])
     ros::NodeHandle n;
 
     // UART open.
+    std::string uartLog;
     uart0.Open(UART0_DEVICE_FILE, UART0_BAUD_RATE);
+    uart0.SendMessageUart(std::string("reset"));
+    uart0.ReceiveMessageUart(uartLog);
+    ROS_INFO("[CMD_SERVER] uart reset result: '%s'\n", uartLog.c_str());
+    uart0.SendMessageUart(std::string("OutputModeData"));
+    uart0.setModeNonCanonical(36, 0);
 
     signal(SIGINT, mySignalHandler);
 
