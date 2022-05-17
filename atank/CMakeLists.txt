@@ -252,4 +252,13 @@ target_link_libraries(camera_recoder
 )
 add_dependencies(camera_recoder atank_gencpp)
 
-
+#############################
+# Lidar Map generator (test)
+#############################
+add_executable(lidar_mapper
+    src/lidar_mapper.cpp 
+)
+target_link_libraries(lidar_mapper
+    ${catkin_LIBRARIES}
+)
+add_dependencies(lidar_mapper atank_gencpp)
