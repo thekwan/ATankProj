@@ -4,7 +4,7 @@
 
 typedef struct lidarPacket_ {
     uint8_t qual;   // quality
-    float dist;     // distance
+    float distance; // distance
     float angle;    // angle(degree)
 } lidarPacket;
 
@@ -18,8 +18,13 @@ public:
     ~LidarMapper();
     void procRawLidarFrame(std::vector<uint8_t> data);
     void dumpRawByte(std::vector<uint8_t> data);
+
+    // Test functions
+    void TEST_procRawLidarFrame(void);
 private:
-    bool rawByteFileOpened_;
+    float getAngleDegree(uint8_t high, uint8_t low);
+    float getSpeedHz(uint8_t high, uint8_t low);
+
     std::ofstream  rawbyteFilePtr_;
     std::vector<uint8_t> oldbytes_;
     std::queue<lidarPacket>  rawPackets_;

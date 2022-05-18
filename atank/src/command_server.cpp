@@ -97,6 +97,7 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
                 dataframe.data.push_back(rxBytes[i]);
             }
             msg_pub->publish(dataframe);
+            dataframe.data.clear();
 #else
             ridx = 0;
             while (ridx < rxSize) {
