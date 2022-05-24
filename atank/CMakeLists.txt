@@ -16,6 +16,8 @@ find_package(catkin REQUIRED
 ## Find wxWidget LIBRARIES
 find_package(wxWidgets REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -260,5 +262,7 @@ add_executable(lidar_mapper
 )
 target_link_libraries(lidar_mapper
     ${catkin_LIBRARIES}
+    ${OPENGL_LIBRARIES}
+    ${GLUT_LIBRARIES}
 )
 add_dependencies(lidar_mapper atank_gencpp)

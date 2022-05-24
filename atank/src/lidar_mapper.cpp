@@ -21,8 +21,13 @@ void lidar_frame_callback(const atank::LidarFrame &msg) {
     
     // dump lidar raw byte date into a file.
     lmapper.dumpRawByte(msg.data);
-        
+    // processing lidar raw frame(byte stream)
     lmapper.procRawLidarFrame(msg.data);
+}
+
+void ros_spin(void) {
+    ros::spin();
+    return;
 }
 
 int main(int argc, char *argv[])
@@ -36,10 +41,16 @@ int main(int argc, char *argv[])
     ros::Subscriber sub = n.subscribe("lidar_frame", 1000, lidar_frame_callback);
     ROS_INFO("[CMD SERVER] 'subscriber' is ready to process.");
 
+    std::thread _spin(ros_spin);
+    std::thread _window(lmapper.initOpenGL, &lmapper, argc, argv);
+
+    _spin.join();
+    _window.join();
+
     // TEST CODE
     //lmapper.TEST_procRawLidarFrame();
 
-    ros::spin();
+    //ros::spin();
 
     return 0;
 }
@@ -225,28 +236,29 @@ static float point_pos_x;
 static float point_pos_y;
 static int   map_index;
 
-void MapWindow::initGL() {
+void LidarMapper::initGL() {
     // set "clearing" or background color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);   // black and opaque
 }
 
-void MapWindow::display() {
+void LidarMapper::display() {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    std::vector<point2_t> pts = mapmng.get_map_point(map_index);
+    //std::vector<point2_t> pts = mapmng.get_map_point(map_index);
+    //std::vector<point2_t> pts;
 
     // Define shapes enclosed within a pair of glBegin and glEnd
     glBegin(GL_POINTS);
         glColor3f(1.0f, 1.0f, 0.0f);    // Red
-        for(auto &a : pts) {
-            glVertex2f(point_pos_x + a.x * point_scale, point_pos_y + a.y * point_scale);
-        }
+        //for(auto &a : pts) {
+        //    glVertex2f(point_pos_x + a.x * point_scale, point_pos_y + a.y * point_scale);
+        //}
     glEnd();
 
     glFlush();
 }
 
-void MapWindow::reshape(GLsizei width, GLsizei height) {
+void LidarMapper::reshape(GLsizei width, GLsizei height) {
     // Compute aspect ratio of the new windows
     if (height == 0) height = 1;
     GLfloat aspect = (GLfloat) width / (GLfloat) height;
@@ -267,7 +279,7 @@ void MapWindow::reshape(GLsizei width, GLsizei height) {
     }
 }
 
-void MapWindow::doSpecial(int key, int x, int y) {
+void LidarMapper::doSpecial(int key, int x, int y) {
     switch(key) {
         case GLUT_KEY_LEFT: 
             point_pos_x -= 0.01;
@@ -286,7 +298,7 @@ void MapWindow::doSpecial(int key, int x, int y) {
     glutPostRedisplay();
 }
 
-void MapWindow::doKeyboard(unsigned char key, int x, int y) {
+void LidarMapper::doKeyboard(unsigned char key, int x, int y) {
     switch(key) {
         case 'x':
         case 'X':
@@ -302,7 +314,8 @@ void MapWindow::doKeyboard(unsigned char key, int x, int y) {
             break;
         case 'i':
         case 'I':
-            int max_index = mapmng.get_map_num();
+            //int max_index = mapmng.get_map_num();
+            int max_index = 0;
             map_index++;
             if (map_index >= max_index) {
                 map_index = max_index-1;
@@ -312,7 +325,7 @@ void MapWindow::doKeyboard(unsigned char key, int x, int y) {
     glutPostRedisplay();
 }
 
-void MapWindow::initOpenGL() {
+void LidarMapper::initOpenGL(LidarMapper *lm, int argc, char *argv[]) {
     point_scale = 1/16384.0;
     point_pos_x = 0.0;
     point_pos_y = 0.0;
@@ -326,9 +339,7 @@ void MapWindow::initOpenGL() {
     glutReshapeFunc(reshape);
     glutKeyboardFunc(doKeyboard);
     glutSpecialFunc(doSpecial);
-    initGL();
+    lm->initGL();
     glutMainLoop();
     return;
 }
-
-

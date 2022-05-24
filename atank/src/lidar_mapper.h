@@ -22,6 +22,8 @@ public:
     ~LidarMapper();
     void procRawLidarFrame(std::vector<uint8_t> data);
     void dumpRawByte(std::vector<uint8_t> data);
+    
+    static void initOpenGL(LidarMapper *lm, int argc, char *argv[]);
 
     // Test functions
     void TEST_procRawLidarFrame(void);
@@ -29,21 +31,14 @@ private:
     float getAngleDegree(uint8_t high, uint8_t low);
     float getSpeedHz(uint8_t high, uint8_t low);
 
+    static void doKeyboard(unsigned char key, int x, int y);
+    static void doSpecial(int key, int x, int y);
+    static void reshape(GLsizei width, GLsizei height);
+    static void display();
+    void initGL();
+
     std::ofstream  rawbyteFilePtr_;
     std::vector<uint8_t> oldbytes_;
     std::queue<lidarPacket>  rawPackets_;
     std::vector<lidarFrame>  superFrames_;
-};
-
-class MapWindow {
-public:
-    MapWindow() {}
-    ~MapWindow() {}
-private:
-    void initOpenGL(void);
-    void doKeyboard(unsigned char key, int x, int y);
-    void doSpecial(int key, int x, int y);
-    void reshape(GLsizei width, GLsizei height);
-    void display();
-    void initGL();
 };
