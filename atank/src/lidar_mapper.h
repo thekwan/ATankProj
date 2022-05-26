@@ -26,7 +26,7 @@ public:
     static void initOpenGL(LidarMapper *lm, int argc, char *argv[]);
 
     // Test functions
-    void TEST_procRawLidarFrame(void);
+    static void TEST_procRawLidarFrame(void);
 private:
     float getAngleDegree(uint8_t high, uint8_t low);
     float getSpeedHz(uint8_t high, uint8_t low);

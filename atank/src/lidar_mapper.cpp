@@ -1,67 +1,9 @@
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include "atank/LidarFrame.h"
 #include "lidar_mapper.h"
+//#include "ros/ros.h"
 
 #include <iostream>
 #include <algorithm>
-#include <thread>
-#include <signal.h>
 
-LidarMapper lmapper;
-
-void mySignalHandler(int sig) {
-    ROS_INFO("Signal handler is called. Server will be terminated.");
-    ros::shutdown();
-    exit(1);
-}
-
-void lidar_frame_callback(const atank::LidarFrame &msg) {
-    ROS_INFO("LidarFrame: frame [%3d, %d]", msg.size, (int)msg.data.size());
-    
-    // dump lidar raw byte date into a file.
-    lmapper.dumpRawByte(msg.data);
-    // processing lidar raw frame(byte stream)
-    lmapper.procRawLidarFrame(msg.data);
-}
-
-void ros_spin(void) {
-    ros::spin();
-    return;
-}
-
-int main(int argc, char *argv[])
-{
-    ros::init(argc, argv, "lidar_mapper");
-    ros::NodeHandle n;
-
-    signal(SIGINT, mySignalHandler);
-
-    // "command": topic name
-    ros::Subscriber sub = n.subscribe("lidar_frame", 1000, lidar_frame_callback);
-    ROS_INFO("[CMD SERVER] 'subscriber' is ready to process.");
-
-    std::thread _spin(ros_spin);
-    std::thread _window(lmapper.initOpenGL, &lmapper, argc, argv);
-
-    _spin.join();
-    _window.join();
-
-    // TEST CODE
-    //lmapper.TEST_procRawLidarFrame();
-
-    //ros::spin();
-
-    return 0;
-}
-
-
-//////////////////////////////////////////////////////////
-//
-// LidarMapper class member functions
-//
-//////////////////////////////////////////////////////////
-//
 LidarMapper::LidarMapper() {
 }
 
@@ -98,53 +40,10 @@ float LidarMapper::getSpeedHz(uint8_t high, uint8_t low) {
     return ((float)high*256.0 + (float)low) / 3840.0;
 }
 
-void LidarMapper::TEST_procRawLidarFrame(void) {
-    std::ifstream ifs;
-
-    ifs.open("lidarDump.dat", std::ios::binary | std::ios::in);
-
-    if (!ifs.is_open()) {
-        std::cerr << "lidar data dump file open fail!" << std::endl;
-        return;
-    }
-
-    int test_count = 0;
-
-    while (!ifs.eof()) {
-        uint16_t size;
-        uint8_t  buf[2048];
-        ifs.read((char*)&size, sizeof(uint16_t));
-        ifs.read((char*)buf, sizeof(uint8_t) * size);
-        std::cout << "detect (raw)frame data[" << size << "]\n";
-
-        std::cout << "data[0] = [" << (int)buf[0] << ", ";
-        std::cout << (int)buf[1] << ", ";
-        std::cout << (int)buf[2] << ", ";
-        std::cout << (int)buf[3] << "\n";
-
-#if 1
-        // create vector typed buffer.
-        std::vector<uint8_t> vbuf;
-        for (int i = 0; i < size; i++) {
-            vbuf.push_back(buf[i]);
-        }
-
-        // calls a test function 'procRawLidarFrame'.
-        procRawLidarFrame(vbuf);
-
-        //if (test_count++ > 40) {
-        //    break;
-        //}
-#endif
-    }
-
-    ifs.close();
-}
-
 void LidarMapper::procRawLidarFrame(std::vector<uint8_t> bytes) {
     std::vector<uint8_t> header = {0x55, 0xAA, 0x03, 0x08};
 
-    ROS_INFO("procRawLidarFrame()");
+    //ROS_INFO("procRawLidarFrame()");
 
     // concatenate old and new data.
     oldbytes_.insert( oldbytes_.end(), bytes.begin(), bytes.end() );
@@ -183,7 +82,7 @@ void LidarMapper::procRawLidarFrame(std::vector<uint8_t> bytes) {
             }
 
             if (angle_step == 0) {
-                ROS_INFO("INVALID RAW FRAME: skip this.");
+                //ROS_INFO("INVALID RAW FRAME: skip this.");
                 it_start = it;
                 continue;
             }
@@ -201,15 +100,15 @@ void LidarMapper::procRawLidarFrame(std::vector<uint8_t> bytes) {
             it++;   // skip 2 bytes for 'end_angle'
             it++;
 
-            ROS_INFO("angle(s,e) = %3.2f , %3.2f  step(%1.2f)", 
-                    angleS, angleE, angle_step);
+            //ROS_INFO("angle(s,e) = %3.2f , %3.2f  step(%1.2f)", 
+            //        angleS, angleE, angle_step);
             
             // remove processed bytes
             it_start = it;// + 30;
         }
         else {
             // NOT FOUND
-            ROS_INFO("NOT FOUND lidar frame");
+            //ROS_INFO("NOT FOUND lidar frame");
             if (it_start == oldbytes_.end()) {
                 oldbytes_.clear();
             }
