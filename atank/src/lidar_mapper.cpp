@@ -5,13 +5,14 @@
 #include <iostream>
 #include <algorithm>
 
-LidarMapper lmapper_;
+LidarMapper lmapper_(100);
 
 LidarMapper *LidarMapper::GetInstance(void) {
     return &lmapper_;
 }
 
-LidarMapper::LidarMapper() {
+LidarMapper::LidarMapper(int max_frame_size) 
+    : maxSuperFrameSize(max_frame_size) {
 }
 
 LidarMapper::~LidarMapper() {
@@ -43,10 +44,17 @@ LidarFrame *LidarMapper::getLastLidarFrame(void) {
 
 LidarFrame *LidarMapper::getLidarFrame(int index) {
     std::lock_guard<std::mutex> lock(mutex_superFrames_);
-    if (index >= superFrames_.size()) {
-        index = superFrames_.size() - 1;
+    
+    auto it = superFrames_.begin();
+    for (int x = 0; it != superFrames_.end() && x < index; it++, x++) {
+        std::cout << "iterate superframe: " << x << " , " << index << std::endl;
     }
-    return &superFrames_[index];
+
+    if (it == superFrames_.end()) {
+        return &superFrames_.back();
+    }
+    
+    return &(*it);
 }
 
 float LidarMapper::getAngleDegree(uint8_t high, uint8_t low) {
@@ -58,6 +66,15 @@ float LidarMapper::getAngleDegree(uint8_t high, uint8_t low) {
 
 float LidarMapper::getSpeedHz(uint8_t high, uint8_t low) {
     return ((float)high*256.0 + (float)low) / 3840.0;
+}
+
+void LidarMapper::addLidarFrame(LidarFrame &lframe) {
+    std::lock_guard<std::mutex> lock(mutex_superFrames_);
+    
+    superFrames_.push_back(lframe);
+    if (superFrames_.size() > maxSuperFrameSize) {
+        superFrames_.pop_front();
+    }
 }
 
 void LidarMapper::addLidarPacket(LidarPacket &packet) {
@@ -77,9 +94,7 @@ void LidarMapper::addLidarPacket(LidarPacket &packet) {
             LidarFrame lframe;
             lframe.packets.swap(rawPackets_);
 
-            mutex_superFrames_.lock();
-            superFrames_.push_back(lframe);
-            mutex_superFrames_.unlock();
+            addLidarFrame(lframe);
 
             lastPacket_angle_ = packet.angle;
             std::cout << "SuperFrame is added! (" << superFrames_.size() << ")\n";
@@ -214,8 +229,10 @@ void display() {
     const float PI = 3.1415926;
     glClear(GL_COLOR_BUFFER_BIT);
 
-    //LidarFrame *lframe = lmapper_.getLastLidarFrame();
-    LidarFrame *lframe = lmapper_.getLidarFrame(map_index);
+    // real-time mode (only display last frame)
+    LidarFrame *lframe = lmapper_.getLastLidarFrame();
+    // debug mode (select one of stacked frames)
+    //LidarFrame *lframe = lmapper_.getLidarFrame(map_index);
 
     // Define shapes enclosed within a pair of glBegin and glEnd
     glBegin(GL_POINTS);
@@ -232,8 +249,9 @@ void display() {
             }
         }
     glEnd();
-
     glFlush();
+
+    glutPostRedisplay();
 }
 
 void reshape(GLsizei width, GLsizei height) {

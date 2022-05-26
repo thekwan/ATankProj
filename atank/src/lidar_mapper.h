@@ -1,5 +1,6 @@
 #include <fstream>
 #include <vector>
+#include <list>
 #include <mutex>
 
 /* OpenGL function includes
@@ -19,7 +20,7 @@ typedef struct LidarFrame_ {
 class LidarMapper {
 public:
     static LidarMapper *GetInstance(void);
-    LidarMapper();
+    LidarMapper(int max_frame_size);
     ~LidarMapper();
     void procRawLidarFrame(std::vector<uint8_t> data);
     void dumpRawByte(std::vector<uint8_t> data);
@@ -33,15 +34,17 @@ private:
     float getSpeedHz(uint8_t high, uint8_t low);
     void addLidarPacket(LidarPacket &packet);
     void printSuperFrame(LidarFrame &lframe);
+    void addLidarFrame(LidarFrame &lframe);
 
     float lastPacket_angle_;
+    const int maxSuperFrameSize;
 
     std::mutex  mutex_superFrames_;
 
     std::ofstream  rawbyteFilePtr_;
     std::vector<uint8_t> oldbytes_;
     std::vector<LidarPacket> rawPackets_;
-    std::vector<LidarFrame>  superFrames_;
+    std::list<LidarFrame> superFrames_;
 };
 
 /* OpenGL GLUT related functions.
