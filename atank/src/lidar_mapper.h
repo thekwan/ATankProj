@@ -1,44 +1,61 @@
 #include <fstream>
 #include <vector>
-#include <queue>
+#include <mutex>
 
 /* OpenGL function includes
  */
 #include <GL/glut.h>
 
-typedef struct lidarPacket_ {
+typedef struct LidarPacket_ {
     uint8_t qual;   // quality
     float distance; // distance
     float angle;    // angle(degree)
-} lidarPacket;
+} LidarPacket;
 
-typedef struct lidarFrame_ {
-    std::vector<lidarPacket> packets;
-} lidarFrame;
+typedef struct LidarFrame_ {
+    std::vector<LidarPacket> packets;
+} LidarFrame;
 
 class LidarMapper {
 public:
+    static LidarMapper *GetInstance(void);
     LidarMapper();
     ~LidarMapper();
     void procRawLidarFrame(std::vector<uint8_t> data);
     void dumpRawByte(std::vector<uint8_t> data);
-    
-    static void initOpenGL(LidarMapper *lm, int argc, char *argv[]);
+    LidarFrame *getLastLidarFrame(void) {
+        std::lock_guard<std::mutex> lock(mutex_superFrames_);
+        return &superFrames_.back();
+    }
 
     // Test functions
     static void TEST_procRawLidarFrame(void);
 private:
     float getAngleDegree(uint8_t high, uint8_t low);
     float getSpeedHz(uint8_t high, uint8_t low);
+    void addLidarPacket(LidarPacket &packet);
+    void printSuperFrame(LidarFrame &lframe);
 
-    static void doKeyboard(unsigned char key, int x, int y);
-    static void doSpecial(int key, int x, int y);
-    static void reshape(GLsizei width, GLsizei height);
-    static void display();
-    void initGL();
+    float lastPacket_angle_;
+
+    std::mutex  mutex_superFrames_;
 
     std::ofstream  rawbyteFilePtr_;
     std::vector<uint8_t> oldbytes_;
-    std::queue<lidarPacket>  rawPackets_;
-    std::vector<lidarFrame>  superFrames_;
+    std::vector<LidarPacket> rawPackets_;
+    std::vector<LidarFrame>  superFrames_;
 };
+
+/* OpenGL GLUT related functions.
+ */
+void initGL();
+void initOpenGL(int argc, char *argv[]);
+void doKeyboard(unsigned char key, int x, int y);
+void doSpecial(int key, int x, int y);
+void reshape(GLsizei width, GLsizei height);
+void display();
+
+extern float point_scale;
+extern float point_pos_x;
+extern float point_pos_y;
+extern int   map_index;

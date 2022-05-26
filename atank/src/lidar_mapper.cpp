@@ -1,8 +1,15 @@
 #include "lidar_mapper.h"
 //#include "ros/ros.h"
 
+#include <cmath>
 #include <iostream>
 #include <algorithm>
+
+LidarMapper lmapper_;
+
+LidarMapper *LidarMapper::GetInstance(void) {
+    return &lmapper_;
+}
 
 LidarMapper::LidarMapper() {
 }
@@ -38,6 +45,40 @@ float LidarMapper::getAngleDegree(uint8_t high, uint8_t low) {
 
 float LidarMapper::getSpeedHz(uint8_t high, uint8_t low) {
     return ((float)high*256.0 + (float)low) / 3840.0;
+}
+
+void LidarMapper::addLidarPacket(LidarPacket &packet) {
+    //std::cout << "packet.angle = " << packet.angle << std::endl;
+
+    if (lastPacket_angle_ < packet.angle) {
+        // lidar angle is increasing, normal case.
+        lastPacket_angle_ = packet.angle;
+        rawPackets_.push_back(packet);
+    }
+    else {
+        // lidar angle is decreasing.
+        // case1) angle is round-trip (360' -> 0')
+        // case2) abnormal case because of Lidar device malfunction.
+        //        in this case, drop all stacked lidar packets.
+        if (lastPacket_angle_ > 355.0) {    // case 1
+            LidarFrame lframe;
+            lframe.packets.swap(rawPackets_);
+
+            mutex_superFrames_.lock();
+            superFrames_.push_back(lframe);
+            mutex_superFrames_.unlock();
+
+            lastPacket_angle_ = packet.angle;
+            std::cout << "SuperFrame is added! (" << superFrames_.size() << ")\n";
+
+            //printSuperFrame(superFrames_.back());     // DEBUG
+        }
+        else {  // case 2
+            rawPackets_.clear();
+            lastPacket_angle_ = 0;
+            std::cout << "Abnormal packet: discards all packets.\n";
+        }
+    }
 }
 
 void LidarMapper::procRawLidarFrame(std::vector<uint8_t> bytes) {
@@ -88,14 +129,16 @@ void LidarMapper::procRawLidarFrame(std::vector<uint8_t> bytes) {
             }
 
             // distance and range data
-            lidarPacket  pk;
+            LidarPacket  pk;
             for (int i = 0; i < 8; i++) {
                 byteL = *it++;
                 byteH = *it++;
                 pk.distance = (float)(byteH)*256.0 + (float)(byteL);
                 pk.qual = *it++;
                 pk.angle = angleS + angle_step * i;
-                //rawPackets_.push_back(pk);
+
+                // add new lidar raw packet.
+                addLidarPacket(pk);
             }
             it++;   // skip 2 bytes for 'end_angle'
             it++;
@@ -129,35 +172,59 @@ void LidarMapper::procRawLidarFrame(std::vector<uint8_t> bytes) {
     // wakes map generator if there is new super-frame.
 }
 
+            
+void LidarMapper::printSuperFrame(LidarFrame &lframe) {
+    char sbuf[128];
+    std::cout << "   [qual] [dist]  [angle]";
+    for (auto &pt : lframe.packets) {
+        sprintf(sbuf, "    %4d, %4.3f, %4.1f", 
+                pt.qual, pt.distance, pt.angle);
+        std::cout << sbuf << std::endl;
+    }
+}
 
-static float point_scale;
-static float point_pos_x;
-static float point_pos_y;
-static int   map_index;
 
-void LidarMapper::initGL() {
+/* OpenGL GLUT releated functions.
+ */
+
+float point_scale;
+float point_pos_x;
+float point_pos_y;
+int   map_index;
+
+void initGL() {
     // set "clearing" or background color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);   // black and opaque
 }
 
-void LidarMapper::display() {
+void display() {
+    const float PI = 3.1415926;
     glClear(GL_COLOR_BUFFER_BIT);
 
+    LidarFrame *lframe = lmapper_.getLastLidarFrame();
     //std::vector<point2_t> pts = mapmng.get_map_point(map_index);
     //std::vector<point2_t> pts;
 
     // Define shapes enclosed within a pair of glBegin and glEnd
     glBegin(GL_POINTS);
         glColor3f(1.0f, 1.0f, 0.0f);    // Red
+
         //for(auto &a : pts) {
         //    glVertex2f(point_pos_x + a.x * point_scale, point_pos_y + a.y * point_scale);
-        //}
+        for (auto &packet : lframe->packets) {
+            // check quality value.
+            if (packet.qual > 10) {
+                float pX = packet.distance * std::cos( packet.angle * PI / 180.0 );
+                float pY = packet.distance * std::sin( packet.angle * PI / 180.0 );
+                glVertex2f(point_pos_x + pX * point_scale, point_pos_y + pY * point_scale);
+            }
+        }
     glEnd();
 
     glFlush();
 }
 
-void LidarMapper::reshape(GLsizei width, GLsizei height) {
+void reshape(GLsizei width, GLsizei height) {
     // Compute aspect ratio of the new windows
     if (height == 0) height = 1;
     GLfloat aspect = (GLfloat) width / (GLfloat) height;
@@ -178,7 +245,7 @@ void LidarMapper::reshape(GLsizei width, GLsizei height) {
     }
 }
 
-void LidarMapper::doSpecial(int key, int x, int y) {
+void doSpecial(int key, int x, int y) {
     switch(key) {
         case GLUT_KEY_LEFT: 
             point_pos_x -= 0.01;
@@ -197,7 +264,7 @@ void LidarMapper::doSpecial(int key, int x, int y) {
     glutPostRedisplay();
 }
 
-void LidarMapper::doKeyboard(unsigned char key, int x, int y) {
+void doKeyboard(unsigned char key, int x, int y) {
     switch(key) {
         case 'x':
         case 'X':
@@ -224,7 +291,7 @@ void LidarMapper::doKeyboard(unsigned char key, int x, int y) {
     glutPostRedisplay();
 }
 
-void LidarMapper::initOpenGL(LidarMapper *lm, int argc, char *argv[]) {
+void initOpenGL(int argc, char *argv[]) {
     point_scale = 1/16384.0;
     point_pos_x = 0.0;
     point_pos_y = 0.0;
@@ -238,7 +305,7 @@ void LidarMapper::initOpenGL(LidarMapper *lm, int argc, char *argv[]) {
     glutReshapeFunc(reshape);
     glutKeyboardFunc(doKeyboard);
     glutSpecialFunc(doSpecial);
-    lm->initGL();
+    initGL();
     glutMainLoop();
     return;
 }

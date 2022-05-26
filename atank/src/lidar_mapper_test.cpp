@@ -3,17 +3,20 @@
 #include <iostream>
 #include <thread>
 
-LidarMapper lmapper;
-
 void TEST_procRawLidarFrame() {
-    std::ifstream ifs;
+    LidarMapper *lmapper = LidarMapper::GetInstance();
 
-    ifs.open("lidarDump.dat", std::ios::binary | std::ios::in);
+    std::ifstream ifs;
+    std::string fname("lidarDump.dat");
+
+    ifs.open(fname, std::ios::binary | std::ios::in);
 
     if (!ifs.is_open()) {
         std::cerr << "lidar data dump file open fail!" << std::endl;
         return;
     }
+
+    std::cout << "Read data flie '" << fname << "'...." << std::endl;
 
     int test_count = 0;
 
@@ -24,12 +27,11 @@ void TEST_procRawLidarFrame() {
         ifs.read((char*)buf, sizeof(uint8_t) * size);
         std::cout << "detect (raw)frame data[" << size << "]\n";
 
-        std::cout << "data[0] = [" << (int)buf[0] << ", ";
-        std::cout << (int)buf[1] << ", ";
-        std::cout << (int)buf[2] << ", ";
-        std::cout << (int)buf[3] << "\n";
+        //std::cout << "data[0] = [" << (int)buf[0] << ", ";
+        //std::cout << (int)buf[1] << ", ";
+        //std::cout << (int)buf[2] << ", ";
+        //std::cout << (int)buf[3] << "\n";
 
-#if 1
         // create vector typed buffer.
         std::vector<uint8_t> vbuf;
         for (int i = 0; i < size; i++) {
@@ -37,12 +39,7 @@ void TEST_procRawLidarFrame() {
         }
 
         // calls a test function 'procRawLidarFrame'.
-        lmapper.procRawLidarFrame(vbuf);
-
-        //if (test_count++ > 40) {
-        //    break;
-        //}
-#endif
+        lmapper->procRawLidarFrame(vbuf);
     }
 
     ifs.close();
@@ -54,7 +51,7 @@ int main(int argc, char *argv[])
     std::thread _callback(TEST_procRawLidarFrame);
     std::cout << "'callback' test thread is created!" << std::endl;
 
-    std::thread _window(lmapper.initOpenGL, &lmapper, argc, argv);
+    std::thread _window(initOpenGL, argc, argv);
     std::cout << "'opengl'   test thread is created!" << std::endl;
 
     _callback.join();
