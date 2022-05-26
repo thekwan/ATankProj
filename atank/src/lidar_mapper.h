@@ -23,10 +23,8 @@ public:
     ~LidarMapper();
     void procRawLidarFrame(std::vector<uint8_t> data);
     void dumpRawByte(std::vector<uint8_t> data);
-    LidarFrame *getLastLidarFrame(void) {
-        std::lock_guard<std::mutex> lock(mutex_superFrames_);
-        return &superFrames_.back();
-    }
+    LidarFrame *getLastLidarFrame(void);
+    LidarFrame *getLidarFrame(int index);
 
     // Test functions
     static void TEST_procRawLidarFrame(void);

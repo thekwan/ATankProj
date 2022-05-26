@@ -36,6 +36,19 @@ void LidarMapper::dumpRawByte(std::vector<uint8_t> data) {
     }
 }
 
+LidarFrame *LidarMapper::getLastLidarFrame(void) {
+    std::lock_guard<std::mutex> lock(mutex_superFrames_);
+    return &superFrames_.back();
+}
+
+LidarFrame *LidarMapper::getLidarFrame(int index) {
+    std::lock_guard<std::mutex> lock(mutex_superFrames_);
+    if (index >= superFrames_.size()) {
+        index = superFrames_.size() - 1;
+    }
+    return &superFrames_[index];
+}
+
 float LidarMapper::getAngleDegree(uint8_t high, uint8_t low) {
     float angle = ((float)high * 256.0 + (float)low) / 64.0 - 640.0;
     angle += (angle < 0) ? 360.0 : 0;
@@ -187,10 +200,10 @@ void LidarMapper::printSuperFrame(LidarFrame &lframe) {
 /* OpenGL GLUT releated functions.
  */
 
-float point_scale;
-float point_pos_x;
-float point_pos_y;
-int   map_index;
+float point_scale = 1.0;
+float point_pos_x = 0.0;
+float point_pos_y = 0.0;
+int   map_index = 0;
 
 void initGL() {
     // set "clearing" or background color
@@ -201,9 +214,8 @@ void display() {
     const float PI = 3.1415926;
     glClear(GL_COLOR_BUFFER_BIT);
 
-    LidarFrame *lframe = lmapper_.getLastLidarFrame();
-    //std::vector<point2_t> pts = mapmng.get_map_point(map_index);
-    //std::vector<point2_t> pts;
+    //LidarFrame *lframe = lmapper_.getLastLidarFrame();
+    LidarFrame *lframe = lmapper_.getLidarFrame(map_index);
 
     // Define shapes enclosed within a pair of glBegin and glEnd
     glBegin(GL_POINTS);
@@ -214,7 +226,7 @@ void display() {
         for (auto &packet : lframe->packets) {
             // check quality value.
             if (packet.qual > 10) {
-                float pX = packet.distance * std::cos( packet.angle * PI / 180.0 );
+                float pX = packet.distance * std::cos( packet.angle * PI / 180.0 ) * -1.0f;
                 float pY = packet.distance * std::sin( packet.angle * PI / 180.0 );
                 glVertex2f(point_pos_x + pX * point_scale, point_pos_y + pY * point_scale);
             }
@@ -279,13 +291,10 @@ void doKeyboard(unsigned char key, int x, int y) {
             exit(0);
             break;
         case 'i':
-        case 'I':
-            //int max_index = mapmng.get_map_num();
-            int max_index = 0;
             map_index++;
-            if (map_index >= max_index) {
-                map_index = max_index-1;
-            }
+            break;
+        case 'I':
+            map_index = 0;
             break;
     }
     glutPostRedisplay();
