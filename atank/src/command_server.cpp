@@ -92,7 +92,7 @@ void MessagePublisherThreadWrapperUart(ros::Publisher *msg_pub) {
             ROS_INFO("uart0.ReceiveByte = %d", rxSize);
 
 #if 1
-	    dataframe.size = (uint16_t) rxSize;
+            dataframe.size = (uint16_t) rxSize;
             for(int i = 0; i < rxSize; i++) {
                 dataframe.data.push_back(rxBytes[i]);
             }
@@ -356,7 +356,7 @@ std::string uart_control(struct command_list & clist) {
     uart0.SendMessageUart(clist.args[0]);
 
     std::string _msg("No response from UART");
-    uart0.ReceiveMessageUart(_msg);
+    //uart0.ReceiveMessageUart(_msg);
     log += _msg;
 
     return log;
@@ -411,7 +411,7 @@ std::string version(struct command_list & clist) {
 
     // receive ack message
     std::string _msg("No response from UART");
-    uart0.ReceiveMessageUart(_msg);
+    //uart0.ReceiveMessageUart(_msg);
 
     return log + _msg;
 }
