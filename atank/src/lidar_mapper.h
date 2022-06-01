@@ -35,13 +35,17 @@ private:
     void addLidarPacket(LidarPacket &packet);
     void printSuperFrame(LidarFrame &lframe);
     void addLidarFrame(LidarFrame &lframe);
+    void writeFileLidarFrame(LidarFrame &lframe);
 
     float lastPacket_angle_;
     const int maxSuperFrameSize;
 
     std::mutex  mutex_superFrames_;
 
+    // ONLY FOR DEBUG
     std::ofstream  rawbyteFilePtr_;
+    std::ofstream  sframeFilePtr_;
+
     std::vector<uint8_t> oldbytes_;
     std::vector<LidarPacket> rawPackets_;
     std::list<LidarFrame> superFrames_;

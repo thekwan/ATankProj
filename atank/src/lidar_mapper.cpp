@@ -19,6 +19,9 @@ LidarMapper::~LidarMapper() {
     if (!rawbyteFilePtr_.is_open()) {
         rawbyteFilePtr_.close();
     }
+    if (!sframeFilePtr_.is_open()) {
+        sframeFilePtr_.close();
+    }
 }
 
 void LidarMapper::dumpRawByte(std::vector<uint8_t> data) {
@@ -68,7 +71,29 @@ float LidarMapper::getSpeedHz(uint8_t high, uint8_t low) {
     return ((float)high*256.0 + (float)low) / 3840.0;
 }
 
+void LidarMapper::writeFileLidarFrame(LidarFrame &lframe) {
+    if (sframeFilePtr_.is_open()) {
+        // write header(data size) 16bits.
+        int size = (int) lframe.packets.size();
+        sframeFilePtr_.write((char*)&size, sizeof(int));
+
+        // write byte datas
+        for (auto &packet : lframe.packets) {
+            sframeFilePtr_.write((char*)&packet.qual, sizeof(uint8_t));
+            sframeFilePtr_.write((char*)&packet.distance, sizeof(float));
+            sframeFilePtr_.write((char*)&packet.angle, sizeof(float));
+        }
+    }
+    else {
+        sframeFilePtr_.open("LidarFrames.dat", 
+                std::ios::binary | std::ios::out);
+    }
+}
+
 void LidarMapper::addLidarFrame(LidarFrame &lframe) {
+    // ONLY FOR DEBUG
+    writeFileLidarFrame(lframe);
+
     std::lock_guard<std::mutex> lock(mutex_superFrames_);
     
     superFrames_.push_back(lframe);

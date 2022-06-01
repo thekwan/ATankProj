@@ -17,7 +17,7 @@ void lidar_frame_callback(const atank::LidarFrame &msg) {
     //ROS_INFO("LidarFrame: frame [%3d, %d]", msg.size, (int)msg.data.size());
     
     // dump lidar raw byte date into a file.
-    lmapper->dumpRawByte(msg.data);
+    //lmapper->dumpRawByte(msg.data);
     // processing lidar raw frame(byte stream)
     lmapper->procRawLidarFrame(msg.data);
 }
