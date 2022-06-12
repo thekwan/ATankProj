@@ -8,7 +8,7 @@ void ATankPlanner::keyboard_left_push() {
         //reqServiceMove(std::string("uart.right.fw"));
         reqServiceMove(std::string("uart.lt"));     // set direction
         //reqServiceMove(std::string("uart.bsu"));    // set speed (old method)
-        reqServiceMove(std::string("uart.set_speed_30"));    // set speed
+        reqServiceMove(std::string("uart.set_speed_20"));    // set speed
         m_logText->AppendText("Request 'move' service: left turn.\n");
     }
 }
@@ -20,7 +20,7 @@ void ATankPlanner::keyboard_right_push() {
         //reqServiceMove(std::string("uart.left.fw"));
         reqServiceMove(std::string("uart.rt"));     // set direction
         //reqServiceMove(std::string("uart.bsu"));    // set speed (old method)
-        reqServiceMove(std::string("uart.set_speed_30"));    // set speed
+        reqServiceMove(std::string("uart.set_speed_20"));    // set speed
         m_logText->AppendText("Request 'move' service: right turn.\n");
     }
 }
@@ -32,7 +32,7 @@ void ATankPlanner::keyboard_up_push() {
         //reqServiceMove(std::string("uart.both.fw"));
         reqServiceMove(std::string("uart.rf"));
         //reqServiceMove(std::string("uart.bsu"));
-        reqServiceMove(std::string("uart.set_speed_30"));    // set speed
+        reqServiceMove(std::string("uart.set_speed_20"));    // set speed
         m_logText->AppendText("Request 'move' service: go forward.\n");
     }
 }
@@ -44,7 +44,7 @@ void ATankPlanner::keyboard_down_push() {
         //reqServiceMove(std::string("uart.both.bw"));
         reqServiceMove(std::string("uart.rb"));
         //reqServiceMove(std::string("uart.bsu"));
-        reqServiceMove(std::string("uart.set_speed_30"));    // set speed
+        reqServiceMove(std::string("uart.set_speed_20"));    // set speed
         m_logText->AppendText("Request 'move' service: go backward.\n");
     }
 }
