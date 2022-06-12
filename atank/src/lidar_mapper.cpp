@@ -115,7 +115,7 @@ void LidarMapper::addLidarPacket(LidarPacket &packet) {
         // case1) angle is round-trip (360' -> 0')
         // case2) abnormal case because of Lidar device malfunction.
         //        in this case, drop all stacked lidar packets.
-        if (lastPacket_angle_ > 355.0) {    // case 1
+        if (lastPacket_angle_ > 355.0 && rawPackets_.size() > 360) {    // case 1
             LidarFrame lframe;
             lframe.packets.swap(rawPackets_);
 
