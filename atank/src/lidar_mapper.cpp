@@ -63,6 +63,7 @@ LidarFrame *LidarMapper::getLidarFrame(int index) {
 float LidarMapper::getAngleDegree(uint8_t high, uint8_t low) {
     float angle = ((float)high * 256.0 + (float)low) / 64.0 - 640.0;
     angle += (angle < 0) ? 360.0 : 0;
+    angle -= (angle > 360.0) ? 360.0 : 0;
 
     return angle;
 }
@@ -189,6 +190,10 @@ void LidarMapper::procRawLidarFrame(std::vector<uint8_t> bytes) {
                 pk.distance = (float)(byteH)*256.0 + (float)(byteL);
                 pk.qual = *it++;
                 pk.angle = angleS + angle_step * i;
+
+                if (pk.angle > 360.0) {
+                    pk.angle -= 360.0;
+                }
 
                 // add new lidar raw packet.
                 addLidarPacket(pk);
